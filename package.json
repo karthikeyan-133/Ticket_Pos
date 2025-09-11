@@ -1,8 +1,0 @@
-{
-  "dependencies": {
-    "@supabase/supabase-js": "^2.57.4"
-  },
-  "devDependencies": {
-    "@types/axios": "^0.9.36"
-  }
-}
