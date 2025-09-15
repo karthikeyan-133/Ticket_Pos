@@ -21,9 +21,20 @@ import { executiveAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
 import { ExecutiveForm } from "@/components/executives/ExecutiveForm";
 
+// Define the executive data structure
+interface Executive {
+  id: string | number;
+  name: string;
+  email: string;
+  mobile: string;
+  department: string;
+  is_active: boolean;
+  isActive?: boolean; // For backward compatibility
+}
+
 const Executives = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [executives, setExecutives] = useState<any[]>([]);
+  const [executives, setExecutives] = useState<Executive[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -35,11 +46,23 @@ const Executives = () => {
       setLoading(true);
       setError(null);
       const executivesData = await executiveAPI.getAll();
+      
       // Validate that we received an array
       if (!Array.isArray(executivesData)) {
         throw new Error('Invalid data format received from server');
       }
-      setExecutives(executivesData);
+      
+      // Normalize data format to ensure consistent field names
+      const normalizedData = executivesData.map((exec: any) => ({
+        id: exec.id,
+        name: exec.name,
+        email: exec.email,
+        mobile: exec.mobile || exec.phone || '',
+        department: exec.department,
+        is_active: exec.is_active !== undefined ? exec.is_active : (exec.isActive !== undefined ? exec.isActive : true)
+      }));
+      
+      setExecutives(normalizedData);
     } catch (error: any) {
       console.error("Error fetching executives:", error);
       let errorMessage = 'Failed to fetch executives. Please try again.';
@@ -70,12 +93,14 @@ const Executives = () => {
   const handleAddExecutive = async (data: any) => {
     try {
       setIsSubmitting(true);
-      // Convert is_active to isActive for the backend
+      // Ensure data is in the correct format for the backend
       const executiveData = {
-        ...data,
-        isActive: data.is_active
+        name: data.name,
+        email: data.email,
+        mobile: data.mobile,
+        department: data.department,
+        is_active: data.is_active
       };
-      delete executiveData.is_active;
       
       await executiveAPI.create(executiveData);
       toast({
@@ -111,11 +136,8 @@ const Executives = () => {
     fetchExecutives();
   }, []);
 
-  const getStatusBadge = (status: string | boolean | number) => {
-    // Handle different data types for status field
-    // Backend may return isActive as number (1/0), string ("true"/"false"/"active"/"inactive"), or boolean
-    const isActive = status === 1 || status === true || status === "true" || status === "active";
-    return isActive ? (
+  const getStatusBadge = (status: boolean) => {
+    return status ? (
       <Badge className="bg-status-open text-white">Active</Badge>
     ) : (
       <Badge className="bg-status-closed text-white">Inactive</Badge>
@@ -227,15 +249,7 @@ const Executives = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Agents</p>
                 <p className="text-2xl font-bold">
-                  {executives.filter((e: any) => {
-                    // Handle different data types for isActive field
-                    // Backend returns isActive as number (1/0), string ("true"/"false"), or boolean
-                    if (e.isActive === undefined) return true; // Default to active if not specified
-                    if (e.isActive === 1 || e.isActive === true || e.isActive === "true" || e.isActive === "active") {
-                      return true;
-                    }
-                    return false;
-                  }).length}
+                  {executives.filter(e => e.is_active).length}
                 </p>
               </div>
             </div>
@@ -248,8 +262,8 @@ const Executives = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Assigned Tickets</p>
                 <p className="text-2xl font-bold">
-                  {executives.some((e: any) => e.assignedTickets !== undefined) 
-                    ? executives.reduce((sum: number, e: any) => sum + (e.assignedTickets || 0), 0)
+                  {executives.some(e => e.assignedTickets !== undefined) 
+                    ? executives.reduce((sum, e) => sum + (e.assignedTickets || 0), 0)
                     : 'N/A'}
                 </p>
               </div>
@@ -263,8 +277,8 @@ const Executives = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Resolved</p>
                 <p className="text-2xl font-bold">
-                  {executives.some((e: any) => e.resolvedTickets !== undefined) 
-                    ? executives.reduce((sum: number, e: any) => sum + (e.resolvedTickets || 0), 0)
+                  {executives.some(e => e.resolvedTickets !== undefined) 
+                    ? executives.reduce((sum, e) => sum + (e.resolvedTickets || 0), 0)
                     : 'N/A'}
                 </p>
               </div>
@@ -291,14 +305,14 @@ const Executives = () => {
       {/* Executives Grid */}
       {filteredExecutives.length > 0 ? (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredExecutives.map((executive: any) => (
+          {filteredExecutives.map((executive) => (
             <Card key={executive.id} className="shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-primary text-primary-foreground font-medium">
-                        {executive.name ? executive.name.split(' ').map((n: string) => n[0]).join('') : 'EX'}
+                        {executive.name ? executive.name.split(' ').map(n => n[0]).join('') : 'EX'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -307,7 +321,7 @@ const Executives = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {getStatusBadge(executive.isActive)}
+                    {getStatusBadge(executive.is_active)}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
