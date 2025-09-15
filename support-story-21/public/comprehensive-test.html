@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comprehensive Backend Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
+        .pending { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        pre { background: #f8f9fa; padding: 10px; overflow: auto; max-height: 300px; }
+        .status-indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .status-up { background-color: #28a745; }
+        .status-down { background-color: #dc3545; }
+        .status-unknown { background-color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Comprehensive Backend API Test</h1>
+        <p>This tool tests connectivity between your frontend and backend services.</p>
+        
+        <div class="test-section">
+            <h2>Backend Status</h2>
+            <div id="backend-status">
+                <span class="status-indicator status-unknown"></span>
+                <span>Checking backend status...</span>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>API Endpoint Tests</h2>
+            <button onclick="runAllTests()">Run All Tests</button>
+            <button onclick="testRoot()">Test Root Endpoint</button>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <button onclick="testTickets()">Test Tickets Endpoint</button>
+            <button onclick="testExecutives()">Test Executives Endpoint</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>Test Results</h2>
+            <div id="test-results"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>Configuration Check</h2>
+            <div id="config-check">
+                <p>Expected API Base URL: <strong id="expected-url"></strong></p>
+                <p>Current Environment: <strong id="current-env"></strong></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const BACKEND_URL = 'https://ticket-pos-backend.vercel.app';
+        const API_BASE = `${BACKEND_URL}/api`;
+        
+        // Display configuration
+        document.getElementById('expected-url').textContent = API_BASE;
+        document.getElementById('current-env').textContent = import.meta.env?.MODE || 'unknown';
+        
+        // Update backend status
+        async function checkBackendStatus() {
+            const statusElement = document.getElementById('backend-status');
+            try {
+                const response = await fetch(BACKEND_URL, { method: 'HEAD' });
+                if (response.ok) {
+                    statusElement.innerHTML = '<span class="status-indicator status-up"></span> Backend is accessible';
+                } else {
+                    statusElement.innerHTML = '<span class="status-indicator status-down"></span> Backend returned status: ' + response.status;
+                }
+            } catch (error) {
+                statusElement.innerHTML = '<span class="status-indicator status-down"></span> Backend is not accessible: ' + error.message;
+            }
+        }
+        
+        // Display result
+        function displayResult(title, data, success = true) {
+            const resultsElement = document.getElementById('test-results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `test-section ${success ? 'success' : 'error'}`;
+            resultElement.innerHTML = `
+                <h3>${title}</h3>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+            resultsElement.appendChild(resultElement);
+            resultsElement.scrollTop = resultsElement.scrollHeight;
+        }
+        
+        // Test functions
+        async function testEndpoint(url, title) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                displayResult(title, data, response.ok);
+                return { success: response.ok, data, status: response.status };
+            } catch (error) {
+                displayResult(title, { error: error.message }, false);
+                return { success: false, error: error.message };
+            }
+        }
+        
+        async function testRoot() {
+            return testEndpoint(BACKEND_URL, 'Root Endpoint Test');
+        }
+        
+        async function testHealth() {
+            return testEndpoint(`${API_BASE}/health`, 'Health Endpoint Test');
+        }
+        
+        async function testTickets() {
+            return testEndpoint(`${API_BASE}/tickets`, 'Tickets Endpoint Test');
+        }
+        
+        async function testExecutives() {
+            return testEndpoint(`${API_BASE}/executives`, 'Executives Endpoint Test');
+        }
+        
+        async function runAllTests() {
+            // Clear previous results
+            document.getElementById('test-results').innerHTML = '';
+            
+            // Run tests sequentially
+            await testRoot();
+            await testHealth();
+            await testTickets();
+            await testExecutives();
+        }
+        
+        // Check backend status on page load
+        checkBackendStatus();
+    </script>
+</body>
+</html>

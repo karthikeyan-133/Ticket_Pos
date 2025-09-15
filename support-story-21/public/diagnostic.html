@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Connectivity Diagnostic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .loading {
+            color: #007bff;
+        }
+        .endpoint {
+            font-family: monospace;
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Connectivity Diagnostic</h1>
+        <p>This page tests connectivity to your backend API endpoints.</p>
+        
+        <div>
+            <button id="testSimple">Test Simple Endpoint</button>
+            <button id="testHealthSimple">Test Health Simple Endpoint</button>
+            <button id="testMain">Test Main API Endpoint</button>
+            <button id="testHealth">Test Health Endpoint</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const baseUrl = 'https://ticket-pos-backend.vercel.app';
+        
+        document.getElementById('testSimple').addEventListener('click', async () => {
+            await testEndpoint('/api/test', 'Simple Test Endpoint');
+        });
+        
+        document.getElementById('testHealthSimple').addEventListener('click', async () => {
+            await testEndpoint('/api/health-simple', 'Health Simple Endpoint');
+        });
+        
+        document.getElementById('testMain').addEventListener('click', async () => {
+            await testEndpoint('/api/test', 'Main API Test Endpoint');
+        });
+        
+        document.getElementById('testHealth').addEventListener('click', async () => {
+            await testEndpoint('/api/health', 'Main Health Endpoint');
+        });
+        
+        async function testEndpoint(endpoint, name) {
+            const resultsDiv = document.getElementById('results');
+            const loadingElement = document.createElement('div');
+            loadingElement.className = 'loading';
+            loadingElement.innerHTML = `<p>Testing ${name} (<span class="endpoint">${endpoint}</span>)...</p>`;
+            resultsDiv.appendChild(loadingElement);
+            
+            try {
+                const response = await fetch(`${baseUrl}${endpoint}`);
+                const data = await response.json();
+                
+                resultsDiv.removeChild(loadingElement);
+                
+                const resultElement = document.createElement('div');
+                resultElement.className = response.ok ? 'test-result success' : 'test-result error';
+                
+                if (response.ok) {
+                    resultElement.innerHTML = `
+                        <h3>✓ ${name} Success</h3>
+                        <p>Status: ${response.status}</p>
+                        <p>Message: ${data.message}</p>
+                        <p>Timestamp: ${data.timestamp || 'N/A'}</p>
+                    `;
+                } else {
+                    resultElement.innerHTML = `
+                        <h3>✗ ${name} Failed</h3>
+                        <p>Status: ${response.status}</p>
+                        <p>Error: ${data.error || data.message}</p>
+                    `;
+                }
+                
+                resultsDiv.appendChild(resultElement);
+            } catch (error) {
+                resultsDiv.removeChild(loadingElement);
+                
+                const errorElement = document.createElement('div');
+                errorElement.className = 'test-result error';
+                errorElement.innerHTML = `
+                    <h3>✗ ${name} Connection Error</h3>
+                    <p>Error: ${error.message}</p>
+                    <p>This might indicate a network issue or that the backend is not running.</p>
+                `;
+                resultsDiv.appendChild(errorElement);
+            }
+        }
+    </script>
+</body>
+</html>
