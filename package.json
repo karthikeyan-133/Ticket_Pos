@@ -1,0 +1,19 @@
+{
+  "name": "ticket-system-monorepo",
+  "version": "1.0.0",
+  "description": "Ticket System with React Frontend and Node.js Backend",
+  "workspaces": [
+    "support-story-21",
+    "support-story-21/server"
+  ],
+  "scripts": {
+    "dev:frontend": "cd support-story-21 && npm run dev",
+    "dev:backend": "cd support-story-21/server && npm run dev",
+    "build:frontend": "cd support-story-21 && npm run build",
+    "build:backend": "cd support-story-21/server && npm run build",
+    "start:backend": "cd support-story-21/server && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  }
+}
