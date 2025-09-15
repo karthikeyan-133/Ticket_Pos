@@ -60,9 +60,24 @@ const Executives = () => {
       setError(null);
       const executivesData = await executiveAPI.getAll();
       
-      // Validate that we received an array
+      console.log('Executives data received:', executivesData);
+      
+      // Handle case where data is null or undefined
+      if (executivesData === null || executivesData === undefined) {
+        setExecutives([]);
+        return;
+      }
+      
+      // Handle case where data is not an array
       if (!Array.isArray(executivesData)) {
-        throw new Error('Invalid data format received from server: Expected array');
+        console.error('Invalid data format received from server: Expected array, got:', typeof executivesData, executivesData);
+        // Try to convert to array if it's an object
+        if (typeof executivesData === 'object') {
+          setExecutives([]);
+        } else {
+          throw new Error(`Invalid data format received from server: Expected array, got ${typeof executivesData}`);
+        }
+        return;
       }
       
       // Validate each executive object
@@ -127,9 +142,9 @@ const Executives = () => {
       const executiveData = {
         name: data.name,
         email: data.email,
-        mobile: data.mobile,
-        department: data.department,
-        is_active: data.is_active
+        mobile: data.mobile || '',
+        department: data.department || '',
+        is_active: data.is_active !== undefined ? data.is_active : true
       };
       
       await executiveAPI.create(executiveData);

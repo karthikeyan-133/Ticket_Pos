@@ -63,12 +63,24 @@ const toCamelCase = (obj) => {
 
 // Ensure consistent data format for executives
 const formatExecutive = (executive) => {
+  // Handle null or undefined executive
+  if (!executive) {
+    return {
+      id: '',
+      name: '',
+      email: '',
+      mobile: '',
+      department: '',
+      is_active: false
+    };
+  }
+  
   return {
     id: executive.id,
-    name: executive.name,
-    email: executive.email,
+    name: executive.name || '',
+    email: executive.email || '',
     mobile: executive.mobile || executive.phone || '',
-    department: executive.department,
+    department: executive.department || '',
     is_active: executive.is_active !== undefined ? executive.is_active : (executive.isActive !== undefined ? executive.isActive : true)
   };
 };
@@ -81,8 +93,11 @@ router.get('/', async (req, res) => {
       const { data, error } = await req.supabase.from('executives').select('*');
       if (error) throw error;
       
+      // Ensure we always return an array
+      const executivesData = Array.isArray(data) ? data : [];
+      
       // Convert snake_case to camelCase for frontend compatibility
-      const formattedData = toCamelCase(data);
+      const formattedData = toCamelCase(executivesData);
       // Ensure consistent data format
       const consistentData = formattedData.map(formatExecutive);
       return res.json(consistentData);
@@ -92,6 +107,7 @@ router.get('/', async (req, res) => {
     const consistentData = executives.map(formatExecutive);
     res.json(consistentData);
   } catch (error) {
+    console.error('Error fetching executives:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -105,6 +121,11 @@ router.get('/:id', async (req, res) => {
     if (req.supabase) {
       const { data, error } = await req.supabase.from('executives').select('*').eq('id', id).single();
       if (error) throw error;
+      
+      // Handle case where no executive is found
+      if (!data) {
+        return res.status(404).json({ error: 'Executive not found' });
+      }
       
       // Convert snake_case to camelCase for frontend compatibility
       const formattedData = toCamelCase(data);
@@ -121,6 +142,7 @@ router.get('/:id', async (req, res) => {
     const consistentData = formatExecutive(executive);
     res.json(consistentData);
   } catch (error) {
+    console.error('Error fetching executive by ID:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -130,19 +152,29 @@ router.post('/', async (req, res) => {
   try {
     const { name, email, department, is_active, mobile } = req.body;
     
+    // Validate required fields
+    if (!name || !email) {
+      return res.status(400).json({ error: 'Name and email are required' });
+    }
+    
     // If we have a Supabase client, use it
     if (req.supabase) {
       // Convert camelCase to snake_case for Supabase
       const supabaseData = {
         name,
         email,
-        department,
+        department: department || '',
         is_active: is_active !== undefined ? is_active : true,
-        mobile
+        mobile: mobile || ''
       };
       
       const { data, error } = await req.supabase.from('executives').insert([supabaseData]).select();
       if (error) throw error;
+      
+      // Handle case where no data is returned
+      if (!data || data.length === 0) {
+        return res.status(500).json({ error: 'Failed to create executive' });
+      }
       
       // Convert snake_case to camelCase for frontend compatibility
       const formattedData = toCamelCase(data[0]);
@@ -156,14 +188,15 @@ router.post('/', async (req, res) => {
       id: executives.length + 1,
       name,
       email,
-      department,
+      department: department || '',
       is_active: is_active !== undefined ? is_active : true,
-      mobile
+      mobile: mobile || ''
     };
     executives.push(newExecutive);
     const consistentData = formatExecutive(newExecutive);
     res.status(201).json(consistentData);
   } catch (error) {
+    console.error('Error creating executive:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -187,7 +220,7 @@ router.put('/:id', async (req, res) => {
       const { data, error } = await req.supabase.from('executives').update(supabaseData).eq('id', id).select();
       if (error) throw error;
       
-      if (data.length === 0) {
+      if (!data || data.length === 0) {
         return res.status(404).json({ error: 'Executive not found' });
       }
       
@@ -206,15 +239,16 @@ router.put('/:id', async (req, res) => {
     
     executives[executiveIndex] = { 
       ...executives[executiveIndex], 
-      name, 
-      email, 
-      department, 
+      name: name !== undefined ? name : executives[executiveIndex].name,
+      email: email !== undefined ? email : executives[executiveIndex].email,
+      department: department !== undefined ? department : executives[executiveIndex].department,
       is_active: is_active !== undefined ? is_active : executives[executiveIndex].is_active,
-      mobile
+      mobile: mobile !== undefined ? mobile : executives[executiveIndex].mobile
     };
     const consistentData = formatExecutive(executives[executiveIndex]);
     res.json(consistentData);
   } catch (error) {
+    console.error('Error updating executive:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -240,6 +274,7 @@ router.delete('/:id', async (req, res) => {
     executives.splice(executiveIndex, 1);
     res.status(204).send();
   } catch (error) {
+    console.error('Error deleting executive:', error);
     res.status(500).json({ error: error.message });
   }
 });
