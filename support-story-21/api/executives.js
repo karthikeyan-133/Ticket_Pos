@@ -1,52 +1,5 @@
 import express from 'express';
-import serverless from 'serverless-http';
-import cors from 'cors';
-
-// Create express app
-const app = express();
-
-// CORS configuration
-app.use(cors());
-
-// Add explicit CORS headers middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
-  if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
-
-app.use(express.json({ limit: '10mb' }));
-
-// Initialize Supabase client for Vercel environment
-let supabase = null;
-
-// Try to initialize Supabase with environment variables
-try {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_KEY;
-  
-  if (supabaseUrl && supabaseKey) {
-    const { createClient } = await import('@supabase/supabase-js');
-    supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('Supabase client initialized successfully in Vercel environment');
-  } else {
-    console.log('Supabase credentials not found in environment variables');
-    // Use mock implementation if credentials are missing
-    const MockSupabase = (await import('../server/models/MockSupabase.js')).default;
-    supabase = new MockSupabase();
-  }
-} catch (error) {
-  console.error('Error initializing Supabase client:', error.message);
-  // Use mock implementation if initialization fails
-  const MockSupabase = (await import('../server/models/MockSupabase.js')).default;
-  supabase = new MockSupabase();
-};
+const router = express.Router();
 
 // Mock data for executives with consistent field names
 let executives = [
@@ -133,7 +86,7 @@ const formatExecutive = (executive) => {
 };
 
 // Get all executives
-app.get('/', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     // If we have a Supabase client, use it
     if (req.supabase) {
@@ -160,7 +113,7 @@ app.get('/', async (req, res) => {
 });
 
 // Get executive by ID
-app.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -195,7 +148,7 @@ app.get('/:id', async (req, res) => {
 });
 
 // Create new executive
-app.post('/', async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { name, email, department, is_active, mobile } = req.body;
     
@@ -249,7 +202,7 @@ app.post('/', async (req, res) => {
 });
 
 // Update executive
-app.put('/:id', async (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, email, department, is_active, mobile } = req.body;
@@ -301,7 +254,7 @@ app.put('/:id', async (req, res) => {
 });
 
 // Delete executive
-app.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -326,6 +279,4 @@ app.delete('/:id', async (req, res) => {
   }
 });
 
-// Export Vercel serverless handler
-export default app;
-export const handler = serverless(app);
+export default router;

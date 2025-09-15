@@ -10,29 +10,13 @@
       "config": {
         "distDir": "dist"
       }
+    },
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
-    {
-      "src": "/api/executives$",
-      "dest": "/api/executives.js",
-      "methods": ["GET", "POST"]
-    },
-    {
-      "src": "/api/executives/(.*)",
-      "dest": "/api/executives.js",
-      "methods": ["GET", "PUT", "DELETE"]
-    },
-    {
-      "src": "/api/tickets$",
-      "dest": "/api/tickets.js",
-      "methods": ["GET", "POST"]
-    },
-    {
-      "src": "/api/tickets/(.*)",
-      "dest": "/api/tickets.js",
-      "methods": ["GET", "PUT", "DELETE"]
-    },
     {
       "src": "/api/(.*)",
       "dest": "/api/index.js"
