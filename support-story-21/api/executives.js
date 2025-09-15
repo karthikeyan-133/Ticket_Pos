@@ -61,6 +61,18 @@ const toCamelCase = (obj) => {
   return obj;
 };
 
+// Ensure consistent data format for executives
+const formatExecutive = (executive) => {
+  return {
+    id: executive.id,
+    name: executive.name,
+    email: executive.email,
+    mobile: executive.mobile || executive.phone || '',
+    department: executive.department,
+    is_active: executive.is_active !== undefined ? executive.is_active : (executive.isActive !== undefined ? executive.isActive : true)
+  };
+};
+
 // Get all executives
 router.get('/', async (req, res) => {
   try {
@@ -71,11 +83,14 @@ router.get('/', async (req, res) => {
       
       // Convert snake_case to camelCase for frontend compatibility
       const formattedData = toCamelCase(data);
-      return res.json(formattedData);
+      // Ensure consistent data format
+      const consistentData = formattedData.map(formatExecutive);
+      return res.json(consistentData);
     }
     
-    // Otherwise, return mock data
-    res.json(executives);
+    // Otherwise, return mock data with consistent formatting
+    const consistentData = executives.map(formatExecutive);
+    res.json(consistentData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -93,15 +108,18 @@ router.get('/:id', async (req, res) => {
       
       // Convert snake_case to camelCase for frontend compatibility
       const formattedData = toCamelCase(data);
-      return res.json(formattedData);
+      // Ensure consistent data format
+      const consistentData = formatExecutive(formattedData);
+      return res.json(consistentData);
     }
     
-    // Otherwise, return mock data
+    // Otherwise, return mock data with consistent formatting
     const executive = executives.find(e => e.id == id);
     if (!executive) {
       return res.status(404).json({ error: 'Executive not found' });
     }
-    res.json(executive);
+    const consistentData = formatExecutive(executive);
+    res.json(consistentData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -128,10 +146,12 @@ router.post('/', async (req, res) => {
       
       // Convert snake_case to camelCase for frontend compatibility
       const formattedData = toCamelCase(data[0]);
-      return res.status(201).json(formattedData);
+      // Ensure consistent data format
+      const consistentData = formatExecutive(formattedData);
+      return res.status(201).json(consistentData);
     }
     
-    // Otherwise, use mock data
+    // Otherwise, use mock data with consistent formatting
     const newExecutive = {
       id: executives.length + 1,
       name,
@@ -141,7 +161,8 @@ router.post('/', async (req, res) => {
       mobile
     };
     executives.push(newExecutive);
-    res.status(201).json(newExecutive);
+    const consistentData = formatExecutive(newExecutive);
+    res.status(201).json(consistentData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -172,10 +193,12 @@ router.put('/:id', async (req, res) => {
       
       // Convert snake_case to camelCase for frontend compatibility
       const formattedData = toCamelCase(data[0]);
-      return res.json(formattedData);
+      // Ensure consistent data format
+      const consistentData = formatExecutive(formattedData);
+      return res.json(consistentData);
     }
     
-    // Otherwise, use mock data
+    // Otherwise, use mock data with consistent formatting
     const executiveIndex = executives.findIndex(e => e.id == id);
     if (executiveIndex === -1) {
       return res.status(404).json({ error: 'Executive not found' });
@@ -189,7 +212,8 @@ router.put('/:id', async (req, res) => {
       is_active: is_active !== undefined ? is_active : executives[executiveIndex].is_active,
       mobile
     };
-    res.json(executives[executiveIndex]);
+    const consistentData = formatExecutive(executives[executiveIndex]);
+    res.json(consistentData);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

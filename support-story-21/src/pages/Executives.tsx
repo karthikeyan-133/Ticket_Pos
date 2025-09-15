@@ -29,7 +29,6 @@ interface Executive {
   mobile: string;
   department: string;
   is_active: boolean;
-  isActive?: boolean; // For backward compatibility
 }
 
 const Executives = () => {
@@ -40,6 +39,20 @@ const Executives = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Validate executive data format
+  const validateExecutiveData = (exec: any): exec is Executive => {
+    return (
+      exec &&
+      typeof exec === 'object' &&
+      (typeof exec.id === 'string' || typeof exec.id === 'number') &&
+      typeof exec.name === 'string' &&
+      typeof exec.email === 'string' &&
+      typeof exec.mobile === 'string' &&
+      typeof exec.department === 'string' &&
+      typeof exec.is_active === 'boolean'
+    );
+  };
+
   // Fetch executives from backend
   const fetchExecutives = async () => {
     try {
@@ -49,20 +62,37 @@ const Executives = () => {
       
       // Validate that we received an array
       if (!Array.isArray(executivesData)) {
-        throw new Error('Invalid data format received from server');
+        throw new Error('Invalid data format received from server: Expected array');
       }
       
-      // Normalize data format to ensure consistent field names
-      const normalizedData = executivesData.map((exec: any) => ({
-        id: exec.id,
-        name: exec.name,
-        email: exec.email,
-        mobile: exec.mobile || exec.phone || '',
-        department: exec.department,
-        is_active: exec.is_active !== undefined ? exec.is_active : (exec.isActive !== undefined ? exec.isActive : true)
-      }));
+      // Validate each executive object
+      const validExecutives: Executive[] = [];
+      const invalidExecutives: any[] = [];
       
-      setExecutives(normalizedData);
+      executivesData.forEach((exec: any) => {
+        if (validateExecutiveData(exec)) {
+          validExecutives.push(exec);
+        } else {
+          invalidExecutives.push(exec);
+        }
+      });
+      
+      if (invalidExecutives.length > 0) {
+        console.warn('Invalid executive data received:', invalidExecutives);
+        // Try to normalize the data
+        const normalizedData = invalidExecutives.map((exec: any) => ({
+          id: exec.id || Math.random().toString(36).substr(2, 9),
+          name: exec.name || 'Unknown Executive',
+          email: exec.email || '',
+          mobile: exec.mobile || exec.phone || '',
+          department: exec.department || 'Support',
+          is_active: exec.is_active !== undefined ? exec.is_active : (exec.isActive !== undefined ? exec.isActive : true)
+        }));
+        
+        setExecutives([...validExecutives, ...normalizedData]);
+      } else {
+        setExecutives(validExecutives);
+      }
     } catch (error: any) {
       console.error("Error fetching executives:", error);
       let errorMessage = 'Failed to fetch executives. Please try again.';
@@ -262,8 +292,8 @@ const Executives = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Assigned Tickets</p>
                 <p className="text-2xl font-bold">
-                  {executives.some(e => e.assignedTickets !== undefined) 
-                    ? executives.reduce((sum, e) => sum + (e.assignedTickets || 0), 0)
+                  {executives.some(e => (e as any).assignedTickets !== undefined) 
+                    ? executives.reduce((sum, e) => sum + ((e as any).assignedTickets || 0), 0)
                     : 'N/A'}
                 </p>
               </div>
@@ -277,8 +307,8 @@ const Executives = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total Resolved</p>
                 <p className="text-2xl font-bold">
-                  {executives.some(e => e.resolvedTickets !== undefined) 
-                    ? executives.reduce((sum, e) => sum + (e.resolvedTickets || 0), 0)
+                  {executives.some(e => (e as any).resolvedTickets !== undefined) 
+                    ? executives.reduce((sum, e) => sum + ((e as any).resolvedTickets || 0), 0)
                     : 'N/A'}
                 </p>
               </div>
@@ -357,11 +387,11 @@ const Executives = () => {
                 {/* Performance Stats */}
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-foreground">{executive.assignedTickets !== undefined ? executive.assignedTickets : 'N/A'}</p>
+                    <p className="text-2xl font-bold text-foreground">{(executive as any).assignedTickets !== undefined ? (executive as any).assignedTickets : 'N/A'}</p>
                     <p className="text-xs text-muted-foreground">Assigned</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-foreground">{executive.resolvedTickets !== undefined ? executive.resolvedTickets : 'N/A'}</p>
+                    <p className="text-2xl font-bold text-foreground">{(executive as any).resolvedTickets !== undefined ? (executive as any).resolvedTickets : 'N/A'}</p>
                     <p className="text-xs text-muted-foreground">Resolved</p>
                   </div>
                 </div>

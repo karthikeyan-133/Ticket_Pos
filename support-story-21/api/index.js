@@ -136,6 +136,22 @@ app.get('/api/test', (req, res) => {
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/executives', executiveRoutes);
 
+// Add a specific test endpoint for executives
+app.get('/api/executives/test', async (req, res) => {
+  try {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.status(200).json({ 
+      message: 'Executives API endpoint is working!',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error testing executives API',
+      error: error.message 
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
