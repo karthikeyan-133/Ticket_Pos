@@ -11,6 +11,7 @@
     "dev:backend": "cd support-story-21/server && npm run dev",
     "build:frontend": "cd support-story-21 && npm run build",
     "build:backend": "cd support-story-21/server && npm run build",
+    "vercel-build": "echo 'No build required for serverless functions'",
     "start:backend": "cd support-story-21/server && npm start"
   },
   "devDependencies": {
