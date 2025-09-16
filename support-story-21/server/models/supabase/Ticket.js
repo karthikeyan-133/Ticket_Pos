@@ -1,10 +1,17 @@
 import supabase from '../../config/supabase.js';
 import { sendTicketClosedNotifications } from '../../services/notificationService.js';
 
+// Generate a random ticket number
+const generateTicketNumber = () => {
+  const year = new Date().getFullYear();
+  const randomNumber = Math.floor(1000 + Math.random() * 9000);
+  return `TICKET/${year}/${randomNumber}`;
+};
+
 class Ticket {
   constructor(data) {
     this.id = data.id;
-    this.ticketNumber = data.ticket_number || data.ticketNumber;
+    this.ticketNumber = data.ticket_number || data.ticketNumber || generateTicketNumber();
     this.serialNumber = data.serial_number || data.serialNumber;
     this.companyName = data.company_name || data.companyName;
     this.contactPerson = data.contact_person || data.contactPerson;
