@@ -1,6 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 dotenv.config();
 
 // Import Supabase database connection
@@ -25,6 +32,9 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json());
+
+// Serve static files from the React app build directory
+app.use(express.static(path.join(__dirname, '..', 'dist')));
 
 // Middleware to inject Supabase client into requests
 app.use((req, res, next) => {
@@ -68,6 +78,11 @@ app.get('/api/health', async (req, res) => {
 // Routes
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/executives', executiveRoutes);
+
+// React SPA fallback (last)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'dist', 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
