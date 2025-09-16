@@ -1,3 +1,10 @@
+// Helper function to generate ticket number
+const generateTicketNumber = () => {
+  const year = new Date().getFullYear();
+  const randomNumber = Math.floor(1000 + Math.random() * 9000);
+  return `TICKET/${year}/${randomNumber}`;
+};
+
 // Ticket routes handler that matches the actual database schema
 const ticketRoutes = async (req, res) => {
   const { method } = req;
@@ -90,10 +97,13 @@ const ticketRoutes = async (req, res) => {
           remarks
         } = req.body || {};
         
+        // Generate ticket number if not provided
+        const ticketNumber = ticket_number || generateTicketNumber();
+        
         const { data, error } = await req.supabase
           .from('tickets')
           .insert([{
-            ticket_number,
+            ticket_number: ticketNumber,
             serial_number,
             company_name,
             contact_person,
@@ -106,7 +116,9 @@ const ticketRoutes = async (req, res) => {
             user_type,
             expiry_date,
             resolution: resolution || '',
-            remarks: remarks || ''
+            remarks: remarks || '',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           }])
           .select();
           
@@ -117,7 +129,7 @@ const ticketRoutes = async (req, res) => {
       // Otherwise, use mock data
       const newTicket = {
         id: Math.floor(Math.random() * 1000),
-        ticket_number: `TICKET/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
+        ticket_number: req.body.ticket_number || generateTicketNumber(),
         serial_number: req.body.serial_number || '',
         company_name: req.body.company_name || '',
         contact_person: req.body.contact_person || '',
