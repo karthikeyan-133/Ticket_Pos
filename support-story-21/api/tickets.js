@@ -79,42 +79,42 @@ const ticketRoutes = async (req, res) => {
     if (method === 'POST' && path === '/') {
       // If we have a Supabase client, use it with the correct schema
       if (req.supabase) {
-        // Extract all the fields that match the database schema
+        // Extract all the fields from the request body (camelCase from frontend)
         const { 
-          ticket_number,
-          serial_number,
-          company_name,
-          contact_person,
-          mobile_number,
+          ticketNumber,
+          serialNumber,
+          companyName,
+          contactPerson,
+          mobileNumber,
           email,
-          issue_related,
+          issueRelated,
           priority,
-          assigned_executive,
+          assignedExecutive,
           status,
-          user_type,
-          expiry_date,
+          userType,
+          expiryDate,
           resolution,
           remarks
         } = req.body || {};
         
         // Generate ticket number if not provided
-        const ticketNumber = ticket_number || generateTicketNumber();
+        const ticket_number = ticketNumber || generateTicketNumber();
         
         const { data, error } = await req.supabase
           .from('tickets')
           .insert([{
-            ticket_number: ticketNumber,
-            serial_number,
-            company_name,
-            contact_person,
-            mobile_number,
+            ticket_number,
+            serial_number: serialNumber,
+            company_name: companyName,
+            contact_person: contactPerson,
+            mobile_number: mobileNumber,
             email,
-            issue_related,
+            issue_related: issueRelated,
             priority,
-            assigned_executive,
+            assigned_executive: assignedExecutive,
             status: status || 'open',
-            user_type,
-            expiry_date,
+            user_type: userType,
+            expiry_date: expiryDate,
             resolution: resolution || '',
             remarks: remarks || '',
             created_at: new Date().toISOString(),
@@ -129,18 +129,18 @@ const ticketRoutes = async (req, res) => {
       // Otherwise, use mock data
       const newTicket = {
         id: Math.floor(Math.random() * 1000),
-        ticket_number: req.body.ticket_number || generateTicketNumber(),
-        serial_number: req.body.serial_number || '',
-        company_name: req.body.company_name || '',
-        contact_person: req.body.contact_person || '',
-        mobile_number: req.body.mobile_number || '',
+        ticket_number: req.body.ticketNumber || generateTicketNumber(),
+        serial_number: req.body.serialNumber || '',
+        company_name: req.body.companyName || '',
+        contact_person: req.body.contactPerson || '',
+        mobile_number: req.body.mobileNumber || '',
         email: req.body.email || '',
-        issue_related: req.body.issue_related || 'data',
+        issue_related: req.body.issueRelated || 'data',
         priority: req.body.priority || 'medium',
-        assigned_executive: req.body.assigned_executive || '',
+        assigned_executive: req.body.assignedExecutive || '',
         status: req.body.status || 'open',
-        user_type: req.body.user_type || 'single user',
-        expiry_date: req.body.expiry_date || new Date().toISOString(),
+        user_type: req.body.userType || 'single user',
+        expiry_date: req.body.expiryDate || new Date().toISOString(),
         resolution: req.body.resolution || '',
         remarks: req.body.remarks || '',
         created_at: new Date().toISOString(),
@@ -154,37 +154,37 @@ const ticketRoutes = async (req, res) => {
     if (method === 'PUT' && ticketId) {
       // If we have a Supabase client, use it with the correct schema
       if (req.supabase) {
-        // Extract all the fields that match the database schema
+        // Extract all the fields from the request body (camelCase from frontend)
         const { 
-          ticket_number,
-          serial_number,
-          company_name,
-          contact_person,
-          mobile_number,
+          ticketNumber,
+          serialNumber,
+          companyName,
+          contactPerson,
+          mobileNumber,
           email,
-          issue_related,
+          issueRelated,
           priority,
-          assigned_executive,
+          assignedExecutive,
           status,
-          user_type,
-          expiry_date,
+          userType,
+          expiryDate,
           resolution,
           remarks
         } = req.body || {};
         
         const updateData = {
-          ticket_number,
-          serial_number,
-          company_name,
-          contact_person,
-          mobile_number,
+          ticket_number: ticketNumber,
+          serial_number: serialNumber,
+          company_name: companyName,
+          contact_person: contactPerson,
+          mobile_number: mobileNumber,
           email,
-          issue_related,
+          issue_related: issueRelated,
           priority,
-          assigned_executive,
+          assigned_executive: assignedExecutive,
           status,
-          user_type,
-          expiry_date,
+          user_type: userType,
+          expiry_date: expiryDate,
           resolution,
           remarks,
           updated_at: new Date().toISOString()
