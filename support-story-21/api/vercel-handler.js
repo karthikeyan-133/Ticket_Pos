@@ -21,6 +21,9 @@ const vercelHandler = async (req, res) => {
     return;
   }
 
+  // Add supabase to request object
+  req.supabase = supabase;
+
   // Health check endpoint
   if (req.url === '/api/health') {
     try {

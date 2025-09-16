@@ -1,18 +1,39 @@
-import express from 'express';
-import cors from 'cors';
+// Import required modules
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import routes using relative paths
+// Import route handlers
 import ticketRoutes from './tickets.js';
 import executiveRoutes from './executives.js';
 
-// Create express app
-const app = express();
+// Initialize Supabase client for Vercel environment
+let supabase = null;
+
+// Try to initialize Supabase with environment variables
+try {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_KEY;
+  
+  if (supabaseUrl && supabaseKey) {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('Supabase client initialized successfully in Vercel environment');
+  } else {
+    console.log('Supabase credentials not found in environment variables');
+    // Use mock implementation if credentials are missing
+    const MockSupabase = (await import('../server/models/MockSupabase.js')).default;
+    supabase = new MockSupabase();
+  }
+} catch (error) {
+  console.error('Error initializing Supabase client:', error.message);
+  // Use mock implementation if initialization fails
+  const MockSupabase = (await import('../server/models/MockSupabase.js')).default;
+  supabase = new MockSupabase();
+}
 
 // CORS configuration for Vercel
 const corsOptions = {
@@ -32,143 +53,197 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 
-app.use(cors(corsOptions));
-
-// Add explicit CORS headers middleware
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
+// CORS middleware function
+const corsMiddleware = (req, res) => {
+  const origin = req.headers.origin;
+  const allowedOrigin = corsOptions.origin.some(allowed => 
+    typeof allowed === 'string' ? origin === allowed : allowed.test(origin)
+  ) ? origin : '*';
+  
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 hours
+  
   if (req.method === 'OPTIONS') {
-    res.sendStatus(200);
-  } else {
-    next();
+    res.status(200).end();
+    return true;
   }
-});
+  return false;
+};
 
-app.use(express.json({ limit: '10mb' }));
-
-// Initialize Supabase client for Vercel environment
-let supabase = null;
-
-// Try to initialize Supabase with environment variables
-try {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_KEY;
+// Main Vercel serverless function handler
+const handler = async (req, res) => {
+  // Handle CORS preflight requests
+  if (corsMiddleware(req, res)) {
+    return;
+  }
   
-  if (supabaseUrl && supabaseKey) {
-    const { createClient } = await import('@supabase/supabase-js');
-    supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('Supabase client initialized successfully in Vercel environment');
-  } else {
-    console.log('Supabase credentials not found in environment variables');
-    // Use mock implementation if credentials are missing
-    const MockSupabase = (await import('../server/models/MockSupabase.js')).default;
-    supabase = new MockSupabase();
-  }
-} catch (error) {
-  console.error('Error initializing Supabase client:', error.message);
-  // Use mock implementation if initialization fails
-  const MockSupabase = (await import('../server/models/MockSupabase.js')).default;
-  supabase = new MockSupabase();
-}
-
-// Make supabase available to routes
-app.use((req, res, next) => {
-  req.supabase = supabase;
-  next();
-});
-
-// Root endpoint for health check
-app.get('/', (req, res) => {
-  res.status(200).json({ 
-    message: 'Ticket System API is running!',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Test database connection
-app.get('/api/health', async (req, res) => {
-  // Set CORS headers
-  res.header('Access-Control-Allow-Origin', '*');
-  
-  if (!supabase) {
-    return res.status(500).json({ 
-      message: 'Server is running but Supabase is not configured',
-      error: 'Supabase client not initialized. Please check your configuration.'
-    });
-  }
-
-  try {
-    // Test Supabase connection by querying a simple record
-    const { data, error } = await supabase
-      .from('tickets')
-      .select('id')
-      .limit(1);
-
-    if (error) {
-      throw new Error(error.message);
+  // Parse JSON body if present
+  if (req.method !== 'GET' && req.method !== 'DELETE') {
+    try {
+      req.body = JSON.parse(req.body || '{}');
+    } catch (error) {
+      // Body is already parsed or is not JSON
     }
-
-    res.status(200).json({ 
-      message: 'Server is running!',
-      database: 'Connected to Supabase',
-      testResult: data
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      message: 'Server is running but database connection failed',
-      error: error.message 
-    });
   }
-});
-
-// Simple connectivity test endpoint
-app.get('/api/test', (req, res) => {
-  res.status(200).json({ 
-    message: 'API connectivity test successful!',
-    timestamp: new Date().toISOString()
-  });
-});
-
-// Routes
-app.use('/api/tickets', ticketRoutes);
-app.use('/api/executives', executiveRoutes);
-
-// Add a specific test endpoint for executives
-app.get('/api/executives/test', async (req, res) => {
+  
+  // Add supabase to request object for routes
+  req.supabase = supabase;
+  
+  // Route handling
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const path = url.pathname;
+  
   try {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.status(200).json({ 
-      message: 'Executives API endpoint is working!',
-      timestamp: new Date().toISOString()
-    });
+    // Root endpoint for health check
+    if (path === '/' && req.method === 'GET') {
+      res.status(200).json({ 
+        message: 'Ticket System API is running!',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+    
+    // Health check endpoint
+    if (path === '/api/health' && req.method === 'GET') {
+      // Set CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      if (!supabase) {
+        return res.status(500).json({ 
+          message: 'Server is running but Supabase is not configured',
+          error: 'Supabase client not initialized. Please check your configuration.'
+        });
+      }
+
+      try {
+        // Test Supabase connection by querying a simple record
+        const { data, error } = await supabase
+          .from('tickets')
+          .select('id')
+          .limit(1);
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        res.status(200).json({ 
+          message: 'Server is running!',
+          database: 'Connected to Supabase',
+          testResult: data
+        });
+        return;
+      } catch (error) {
+        res.status(500).json({ 
+          message: 'Server is running but database connection failed',
+          error: error.message 
+        });
+        return;
+      }
+    }
+    
+    // Simple connectivity test endpoint
+    if (path === '/api/test' && req.method === 'GET') {
+      res.status(200).json({ 
+        message: 'API connectivity test successful!',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+    
+    // Executives test endpoint
+    if (path === '/api/executives/test' && req.method === 'GET') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.status(200).json({ 
+        message: 'Executives API endpoint is working!',
+        timestamp: new Date().toISOString()
+      });
+      return;
+    }
+    
+    // Ticket routes
+    if (path.startsWith('/api/tickets')) {
+      const ticketPath = path.substring('/api/tickets'.length) || '/';
+      const ticketReq = {
+        ...req,
+        url: ticketPath,
+        path: ticketPath,
+        params: {},
+        query: Object.fromEntries(url.searchParams)
+      };
+      
+      // Extract ID from path if present
+      const pathParts = ticketPath.split('/').filter(Boolean);
+      if (pathParts.length > 0 && pathParts[0]) {
+        ticketReq.params.id = pathParts[0];
+      }
+      
+      const ticketRes = {
+        status: (code) => {
+          res.statusCode = code;
+          return ticketRes;
+        },
+        json: (data) => {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(data));
+        },
+        send: (data) => {
+          res.end(data);
+        }
+      };
+      
+      await ticketRoutes(ticketReq, ticketRes);
+      return;
+    }
+    
+    // Executive routes
+    if (path.startsWith('/api/executives')) {
+      const executivePath = path.substring('/api/executives'.length) || '/';
+      const executiveReq = {
+        ...req,
+        url: executivePath,
+        path: executivePath,
+        params: {},
+        query: Object.fromEntries(url.searchParams)
+      };
+      
+      // Extract ID from path if present
+      const pathParts = executivePath.split('/').filter(Boolean);
+      if (pathParts.length > 0 && pathParts[0]) {
+        executiveReq.params.id = pathParts[0];
+      }
+      
+      const executiveRes = {
+        status: (code) => {
+          res.statusCode = code;
+          return executiveRes;
+        },
+        json: (data) => {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(data));
+        },
+        send: (data) => {
+          res.end(data);
+        }
+      };
+      
+      await executiveRoutes(executiveReq, executiveRes);
+      return;
+    }
+    
+    // 404 handler
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.status(404).json({ error: 'Route not found' });
   } catch (error) {
+    console.error('API Error:', error);
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(500).json({ 
-      message: 'Error testing executives API',
-      error: error.message 
+      error: 'Something went wrong!',
+      message: error.message 
     });
   }
-});
+};
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  // Set CORS headers for error responses
-  res.header('Access-Control-Allow-Origin', '*');
-  res.status(500).json({ 
-    error: 'Something went wrong!',
-    message: err.message 
-  });
-});
-
-// 404 handler
-app.use((req, res) => {
-  // Set CORS headers for 404 responses
-  res.header('Access-Control-Allow-Origin', '*');
-  res.status(404).json({ error: 'Route not found' });
-});
-
-// Export the app as default for Vercel
-export default app;
+// Export the handler as default for Vercel
+export default handler;
