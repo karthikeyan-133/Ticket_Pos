@@ -82,9 +82,19 @@ const handler = async (req, res) => {
   // Parse JSON body if present
   if (req.method !== 'GET' && req.method !== 'DELETE') {
     try {
-      req.body = JSON.parse(req.body || '{}');
+      // Check if body is already parsed (Vercel sometimes parses it automatically)
+      if (typeof req.body === 'string') {
+        req.body = JSON.parse(req.body);
+      } else if (!req.body) {
+        // If no body, try to parse from rawBody
+        if (req.rawBody) {
+          req.body = JSON.parse(req.rawBody);
+        }
+      }
+      // If body is already an object, leave it as is
     } catch (error) {
-      // Body is already parsed or is not JSON
+      // Body is not JSON or is already parsed
+      console.log('Body parsing error or body already parsed:', error.message);
     }
   }
   

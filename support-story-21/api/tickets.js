@@ -1,10 +1,4 @@
-// Mock data for tickets
-let tickets = [
-  { id: 1, title: 'Sample Ticket 1', description: 'This is a sample ticket', status: 'open' },
-  { id: 2, title: 'Sample Ticket 2', description: 'This is another sample ticket', status: 'closed' }
-];
-
-// Ticket routes handler
+// Ticket routes handler that matches the actual database schema
 const ticketRoutes = async (req, res) => {
   const { method } = req;
   const path = req.path || '/';
@@ -22,7 +16,10 @@ const ticketRoutes = async (req, res) => {
       }
       
       // Otherwise, return mock data
-      return res.json(tickets);
+      return res.json([
+        { id: 1, title: 'Sample Ticket 1', status: 'open' },
+        { id: 2, title: 'Sample Ticket 2', status: 'closed' }
+      ]);
     }
     
     // Get ticket by ID
@@ -35,6 +32,10 @@ const ticketRoutes = async (req, res) => {
       }
       
       // Otherwise, return mock data
+      const tickets = [
+        { id: 1, title: 'Sample Ticket 1', status: 'open' },
+        { id: 2, title: 'Sample Ticket 2', status: 'closed' }
+      ];
       const ticket = tickets.find(t => t.id == ticketId);
       if (!ticket) {
         return res.status(404).json({ error: 'Ticket not found' });
@@ -44,45 +45,137 @@ const ticketRoutes = async (req, res) => {
     
     // Create new ticket
     if (method === 'POST' && path === '/') {
-      const { title, description } = req.body || {};
-      
-      // If we have a Supabase client, use it
+      // If we have a Supabase client, use it with the correct schema
       if (req.supabase) {
-        const { data, error } = await req.supabase.from('tickets').insert([{ title, description, status: 'open' }]).select();
+        // Extract all the fields that match the database schema
+        const { 
+          ticket_number,
+          serial_number,
+          company_name,
+          contact_person,
+          mobile_number,
+          email,
+          issue_related,
+          priority,
+          assigned_executive,
+          status,
+          user_type,
+          expiry_date,
+          resolution,
+          remarks
+        } = req.body || {};
+        
+        const { data, error } = await req.supabase
+          .from('tickets')
+          .insert([{
+            ticket_number,
+            serial_number,
+            company_name,
+            contact_person,
+            mobile_number,
+            email,
+            issue_related,
+            priority,
+            assigned_executive,
+            status: status || 'open',
+            user_type,
+            expiry_date,
+            resolution: resolution || '',
+            remarks: remarks || ''
+          }])
+          .select();
+          
         if (error) throw error;
         return res.status(201).json(data[0]);
       }
       
       // Otherwise, use mock data
       const newTicket = {
-        id: tickets.length + 1,
-        title,
-        description,
-        status: 'open'
+        id: Math.floor(Math.random() * 1000),
+        ticket_number: `TICKET/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
+        serial_number: req.body.serial_number || '',
+        company_name: req.body.company_name || '',
+        contact_person: req.body.contact_person || '',
+        mobile_number: req.body.mobile_number || '',
+        email: req.body.email || '',
+        issue_related: req.body.issue_related || 'data',
+        priority: req.body.priority || 'medium',
+        assigned_executive: req.body.assigned_executive || '',
+        status: req.body.status || 'open',
+        user_type: req.body.user_type || 'single user',
+        expiry_date: req.body.expiry_date || new Date().toISOString(),
+        resolution: req.body.resolution || '',
+        remarks: req.body.remarks || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
-      tickets.push(newTicket);
+      
       return res.status(201).json(newTicket);
     }
     
     // Update ticket
     if (method === 'PUT' && ticketId) {
-      const { title, description, status } = req.body || {};
-      
-      // If we have a Supabase client, use it
+      // If we have a Supabase client, use it with the correct schema
       if (req.supabase) {
-        const { data, error } = await req.supabase.from('tickets').update({ title, description, status }).eq('id', ticketId).select();
+        // Extract all the fields that match the database schema
+        const { 
+          ticket_number,
+          serial_number,
+          company_name,
+          contact_person,
+          mobile_number,
+          email,
+          issue_related,
+          priority,
+          assigned_executive,
+          status,
+          user_type,
+          expiry_date,
+          resolution,
+          remarks
+        } = req.body || {};
+        
+        const updateData = {
+          ticket_number,
+          serial_number,
+          company_name,
+          contact_person,
+          mobile_number,
+          email,
+          issue_related,
+          priority,
+          assigned_executive,
+          status,
+          user_type,
+          expiry_date,
+          resolution,
+          remarks,
+          updated_at: new Date().toISOString()
+        };
+        
+        // Remove undefined fields
+        Object.keys(updateData).forEach(key => {
+          if (updateData[key] === undefined) {
+            delete updateData[key];
+          }
+        });
+        
+        const { data, error } = await req.supabase
+          .from('tickets')
+          .update(updateData)
+          .eq('id', ticketId)
+          .select();
+          
         if (error) throw error;
         return res.json(data[0]);
       }
       
       // Otherwise, use mock data
-      const ticketIndex = tickets.findIndex(t => t.id == ticketId);
-      if (ticketIndex === -1) {
-        return res.status(404).json({ error: 'Ticket not found' });
-      }
-      
-      tickets[ticketIndex] = { ...tickets[ticketIndex], title, description, status };
-      return res.json(tickets[ticketIndex]);
+      return res.status(200).json({ 
+        id: ticketId,
+        ...req.body,
+        updated_at: new Date().toISOString()
+      });
     }
     
     // Delete ticket
@@ -95,18 +188,13 @@ const ticketRoutes = async (req, res) => {
       }
       
       // Otherwise, use mock data
-      const ticketIndex = tickets.findIndex(t => t.id == ticketId);
-      if (ticketIndex === -1) {
-        return res.status(404).json({ error: 'Ticket not found' });
-      }
-      
-      tickets.splice(ticketIndex, 1);
       return res.status(204).send();
     }
     
     // 404 for unmatched routes
     return res.status(404).json({ error: 'Route not found' });
   } catch (error) {
+    console.error('Ticket API Error:', error);
     return res.status(500).json({ error: error.message });
   }
 };
