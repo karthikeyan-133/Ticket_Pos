@@ -3,7 +3,12 @@ const ticketRoutes = async (req, res) => {
   const { method } = req;
   const path = req.path || '/';
   const pathParts = path.split('/').filter(Boolean);
-  const ticketId = pathParts[0]; // Extract ID from path if present
+  
+  // Extract ticketId from path if present
+  // Handle special case for /serial/:serialNumber route
+  const isSerialRoute = pathParts[0] === 'serial' && pathParts[1];
+  const ticketId = isSerialRoute ? null : pathParts[0]; // Don't treat "serial" as an ID
+  const serialNumber = isSerialRoute ? pathParts[1] : null;
 
   try {
     // Get all tickets
@@ -20,6 +25,26 @@ const ticketRoutes = async (req, res) => {
         { id: 1, title: 'Sample Ticket 1', status: 'open' },
         { id: 2, title: 'Sample Ticket 2', status: 'closed' }
       ]);
+    }
+    
+    // Get tickets by serial number
+    if (method === 'GET' && isSerialRoute) {
+      // If we have a Supabase client, use it
+      if (req.supabase) {
+        const { data, error } = await req.supabase
+          .from('tickets')
+          .select('*')
+          .eq('serial_number', serialNumber);
+        if (error) throw error;
+        return res.json(data);
+      }
+      
+      // Otherwise, return mock data
+      const mockTickets = [
+        { id: 1, title: 'Sample Ticket 1', status: 'open', serial_number: serialNumber },
+        { id: 2, title: 'Sample Ticket 2', status: 'closed', serial_number: serialNumber }
+      ];
+      return res.json(mockTickets);
     }
     
     // Get ticket by ID
