@@ -1,4 +1,5 @@
 import supabase from '../../config/supabase.js';
+import { sendTicketClosedNotifications } from '../../services/notificationService.js';
 
 class Ticket {
   constructor(data) {
@@ -226,9 +227,11 @@ class Ticket {
     delete updateData.closedAt;
 
     // Check if status is changing to closed
+    let isClosing = false;
     if (data.status === 'closed') {
       const existingTicket = await this.findById(id);
       if (existingTicket && existingTicket.status !== 'closed') {
+        isClosing = true;
         updateData.closed_at = new Date().toISOString();
       }
     }
@@ -264,9 +267,15 @@ class Ticket {
       closedAt: updatedData[0].closed_at
     };
 
-    // If closing, send notification (this would be implemented in a service)
-    if (updateData.status === 'closed') {
-      console.log(`Ticket ${ticketData.ticketNumber} has been closed`);
+    // If closing, send notification
+    if (isClosing) {
+      console.log(`Ticket ${ticketData.ticketNumber} has been closed, sending notification...`);
+      try {
+        await sendTicketClosedNotifications(ticketData);
+        console.log(`Notification sent for ticket ${ticketData.ticketNumber}`);
+      } catch (error) {
+        console.error(`Error sending notification for ticket ${ticketData.ticketNumber}:`, error);
+      }
     }
 
     return new Ticket(ticketData);

@@ -29,6 +29,7 @@ interface Executive {
   mobile: string;
   department: string;
   is_active: boolean;
+  isActive?: boolean; // For backward compatibility
 }
 
 const Executives = () => {
@@ -41,16 +42,24 @@ const Executives = () => {
 
   // Validate executive data format
   const validateExecutiveData = (exec: any): exec is Executive => {
-    return (
+    // Check if the executive object has the required properties
+    const hasRequiredProps = (
       exec &&
       typeof exec === 'object' &&
       (typeof exec.id === 'string' || typeof exec.id === 'number') &&
       typeof exec.name === 'string' &&
       typeof exec.email === 'string' &&
       typeof exec.mobile === 'string' &&
-      typeof exec.department === 'string' &&
-      typeof exec.is_active === 'boolean'
+      typeof exec.department === 'string'
     );
+    
+    // Check if it has either is_active or isActive as a boolean
+    const hasValidStatus = (
+      (exec.is_active !== undefined && typeof exec.is_active === 'boolean') ||
+      (exec.isActive !== undefined && typeof exec.isActive === 'boolean')
+    );
+    
+    return hasRequiredProps && hasValidStatus;
   };
 
   // Fetch executives from backend
@@ -94,13 +103,14 @@ const Executives = () => {
       
       if (invalidExecutives.length > 0) {
         console.warn('Invalid executive data received:', invalidExecutives);
-        // Try to normalize the data
+        // Try to normalize the data to ensure consistent format
         const normalizedData = invalidExecutives.map((exec: any) => ({
           id: exec.id || Math.random().toString(36).substr(2, 9),
           name: exec.name || 'Unknown Executive',
           email: exec.email || '',
           mobile: exec.mobile || exec.phone || '',
           department: exec.department || 'Support',
+          // Ensure we have is_active property for consistent interface
           is_active: exec.is_active !== undefined ? exec.is_active : (exec.isActive !== undefined ? exec.isActive : true)
         }));
         
@@ -144,7 +154,9 @@ const Executives = () => {
         email: data.email,
         mobile: data.mobile || '',
         department: data.department || '',
-        is_active: data.is_active !== undefined ? data.is_active : true
+        // Send both formats for compatibility
+        is_active: data.is_active !== undefined ? data.is_active : (data.isActive !== undefined ? data.isActive : true),
+        isActive: data.is_active !== undefined ? data.is_active : (data.isActive !== undefined ? data.isActive : true)
       };
       
       await executiveAPI.create(executiveData);
@@ -181,8 +193,10 @@ const Executives = () => {
     fetchExecutives();
   }, []);
 
-  const getStatusBadge = (status: boolean) => {
-    return status ? (
+  const getStatusBadge = (executive: Executive) => {
+    // Handle both is_active and isActive properties
+    const isActive = executive.is_active !== undefined ? executive.is_active : executive.isActive;
+    return isActive ? (
       <Badge className="bg-status-open text-white">Active</Badge>
     ) : (
       <Badge className="bg-status-closed text-white">Inactive</Badge>
@@ -294,7 +308,7 @@ const Executives = () => {
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Active Agents</p>
                 <p className="text-2xl font-bold">
-                  {executives.filter(e => e.is_active).length}
+                  {executives.filter(e => e.is_active !== undefined ? e.is_active : e.isActive).length}
                 </p>
               </div>
             </div>
@@ -366,7 +380,7 @@ const Executives = () => {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {getStatusBadge(executive.is_active)}
+                    {getStatusBadge(executive)}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">

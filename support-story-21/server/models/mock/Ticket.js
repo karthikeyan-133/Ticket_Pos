@@ -1,4 +1,6 @@
 // Mock Ticket model for development without database
+import { sendTicketClosedNotifications } from '../../services/notificationService.js';
+
 let tickets = [
   {
     id: '1',
@@ -183,9 +185,16 @@ class Ticket {
     // Update the ticket
     tickets[index] = { ...tickets[index], ...data, updatedAt: new Date().toISOString() };
     
-    // If closing, send notification (mock)
+    // If closing, send notification
     if (isClosing) {
       console.log(`Mock notification: Ticket ${tickets[index].ticketNumber} has been closed`);
+      // Send actual notification
+      try {
+        await sendTicketClosedNotifications(tickets[index]);
+        console.log(`Notification sent for ticket ${tickets[index].ticketNumber}`);
+      } catch (error) {
+        console.error(`Error sending notification for ticket ${tickets[index].ticketNumber}:`, error);
+      }
     }
 
     return tickets[index];
