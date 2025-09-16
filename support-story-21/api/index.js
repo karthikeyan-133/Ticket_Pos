@@ -1,5 +1,4 @@
 import express from 'express';
-import serverless from 'serverless-http';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -12,6 +11,7 @@ const __dirname = dirname(__filename);
 import ticketRoutes from './tickets.js';
 import executiveRoutes from './executives.js';
 
+// Create express app
 const app = express();
 
 // CORS configuration for Vercel
@@ -170,5 +170,5 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-// Export Vercel serverless handler
-export const handler = serverless(app);
+// Export the app as default for Vercel
+export default app;
