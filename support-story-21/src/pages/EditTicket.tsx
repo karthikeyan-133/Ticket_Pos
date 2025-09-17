@@ -61,48 +61,67 @@ const EditTicket = () => {
           action: (
             <button 
               onClick={() => {
-                // Ensure we have a contact person and ticket number
-                const contactPerson = updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer';
-                const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
-                const message = `Hello ${contactPerson}, your support ticket ${ticketNumber} has been resolved. Thank you for your patience!`;
-                
-                // Ensure mobile number exists and is properly formatted
-                const mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
-                if (!mobileNumber || typeof mobileNumber !== 'string') {
-                  toast({
-                    title: "Error",
-                    description: "Mobile number not available for WhatsApp message.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-                
-                // Safely clean the mobile number
-                let cleanNumber = '';
                 try {
-                  cleanNumber = mobileNumber.replace(/\D/g, '');
+                  // Ensure we have a contact person and ticket number
+                  const contactPerson = updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer';
+                  const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
+                  const message = `Hello ${contactPerson}, your support ticket ${ticketNumber} has been resolved. Thank you for your patience!`;
+                  
+                  // Ensure mobile number exists and is properly formatted
+                  let mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
+                  
+                  // Handle various data types that might come from the API
+                  if (mobileNumber === null || mobileNumber === undefined) {
+                    mobileNumber = '';
+                  } else if (typeof mobileNumber !== 'string') {
+                    mobileNumber = String(mobileNumber);
+                  }
+                  
+                  // Check if mobile number is empty or invalid
+                  if (!mobileNumber || mobileNumber.trim() === '') {
+                    toast({
+                      title: "Error",
+                      description: "Mobile number not available for WhatsApp message.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  // Safely clean the mobile number
+                  let cleanNumber = '';
+                  try {
+                    cleanNumber = mobileNumber.replace(/\D/g, '');
+                  } catch (error) {
+                    console.error('Error cleaning mobile number:', error);
+                    toast({
+                      title: "Error",
+                      description: "Invalid mobile number format for WhatsApp message.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  if (!cleanNumber || cleanNumber.trim() === '') {
+                    toast({
+                      title: "Error",
+                      description: "Invalid mobile number format for WhatsApp message.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  
+                  // Add country code if not present (assuming UAE/India format)
+                  const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
+                  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+                  window.open(whatsappUrl, '_blank');
                 } catch (error) {
+                  console.error('Error in WhatsApp redirect:', error);
                   toast({
                     title: "Error",
-                    description: "Invalid mobile number format for WhatsApp message.",
+                    description: "Failed to open WhatsApp. Please try again.",
                     variant: "destructive",
                   });
-                  return;
                 }
-                
-                if (!cleanNumber) {
-                  toast({
-                    title: "Error",
-                    description: "Invalid mobile number format for WhatsApp message.",
-                    variant: "destructive",
-                  });
-                  return;
-                }
-                
-                // Add country code if not present (assuming UAE/India format)
-                const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
-                const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-                window.open(whatsappUrl, '_blank');
               }}
               className="inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
             >
