@@ -112,7 +112,25 @@ export const ticketAPI = {
   // Create new ticket
   create: async (data: any) => {
     try {
-      const response = await apiClient.post('/tickets', data);
+      // Normalize field names to match backend expectations
+      const normalizedData = {
+        ticketNumber: data.ticketNumber,
+        serialNumber: data.serialNumber,
+        companyName: data.companyName,
+        contactPerson: data.contactPerson,
+        mobileNumber: data.mobileNumber,
+        email: data.email,
+        issueRelated: data.issueRelated,
+        priority: data.priority,
+        assignedExecutive: data.assignedExecutive,
+        status: data.status,
+        userType: data.userType,
+        expiryDate: data.expiryDate,
+        resolution: data.resolution,
+        remarks: data.remarks
+      };
+      
+      const response = await apiClient.post('/tickets', normalizedData);
       return response.data;
     } catch (error) {
       handleApiError(error, 'creating ticket');
@@ -122,7 +140,25 @@ export const ticketAPI = {
   // Update ticket
   update: async (id: string, data: any) => {
     try {
-      const response = await apiClient.put(`/tickets/${id}`, data);
+      // Normalize field names to match backend expectations
+      const normalizedData = {
+        ticketNumber: data.ticketNumber,
+        serialNumber: data.serialNumber,
+        companyName: data.companyName,
+        contactPerson: data.contactPerson,
+        mobileNumber: data.mobileNumber,
+        email: data.email,
+        issueRelated: data.issueRelated,
+        priority: data.priority,
+        assignedExecutive: data.assignedExecutive,
+        status: data.status,
+        userType: data.userType,
+        expiryDate: data.expiryDate,
+        resolution: data.resolution,
+        remarks: data.remarks
+      };
+      
+      const response = await apiClient.put(`/tickets/${id}`, normalizedData);
       return response.data;
     } catch (error) {
       handleApiError(error, `updating ticket ${id}`);

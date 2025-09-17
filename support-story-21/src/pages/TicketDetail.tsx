@@ -288,9 +288,9 @@ const TicketDetail = () => {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-2xl">{ticket.ticketNumber}</CardTitle>
+                  <CardTitle className="text-2xl">{ticket.ticket_number || ticket.ticketNumber || `Ticket #${ticket.id}`}</CardTitle>
                   <CardDescription>
-                    Created on {formatToDubaiTime(ticket.createdAt)}
+                    Created on {formatToDubaiTime(ticket.created_at || ticket.createdAt)}
                   </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
@@ -303,46 +303,46 @@ const TicketDetail = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Tally Serial Number</Label>
-                  <p className="font-medium">{ticket.serialNumber}</p>
+                  <p className="font-medium">{ticket.serial_number || ticket.serialNumber || 'N/A'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Company Name</Label>
-                  <p className="font-medium">{ticket.companyName}</p>
+                  <p className="font-medium">{ticket.company_name || ticket.companyName || 'N/A'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Contact Person</Label>
-                  <p className="font-medium">{ticket.contactPerson}</p>
+                  <p className="font-medium">{ticket.contact_person || ticket.contactPerson || 'N/A'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Mobile Number</Label>
-                  <p className="font-medium">{ticket.mobileNumber}</p>
+                  <p className="font-medium">{ticket.mobile_number || ticket.mobileNumber || 'N/A'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Email ID</Label>
-                  <p className="font-medium">{ticket.email}</p>
+                  <p className="font-medium">{ticket.email || 'N/A'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Issue Related To</Label>
-                  <p className="font-medium">{getIssueTypeLabel(ticket.issueRelated)}</p>
+                  <p className="font-medium">{getIssueTypeLabel(ticket.issue_related || ticket.issueRelated || 'N/A')}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Assigned Office Staff</Label>
-                  <p className="font-medium">{ticket.assignedExecutive}</p>
+                  <p className="font-medium">{ticket.assigned_executive || ticket.assignedExecutive || 'N/A'}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Licence Type</Label>
-                  <p className="font-medium">{getUserTypeLabel(ticket.userType)}</p>
+                  <p className="font-medium">{getUserTypeLabel(ticket.user_type || ticket.userType || 'N/A')}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Expiry Date</Label>
                   <p className="font-medium">
-                    {ticket.expiryDate ? format(new Date(ticket.expiryDate), "PPP") : "N/A"}
+                    {ticket.expiry_date || ticket.expiryDate ? format(new Date(ticket.expiry_date || ticket.expiryDate), "PPP") : "N/A"}
                   </p>
                 </div>
-                {ticket.closedAt && (
+                {ticket.closed_at || ticket.closedAt && (
                   <div>
                     <Label className="text-muted-foreground">Closed At</Label>
-                    <p className="font-medium">{formatToDubaiTime(ticket.closedAt)}</p>
+                    <p className="font-medium">{formatToDubaiTime(ticket.closed_at || ticket.closedAt)}</p>
                   </div>
                 )}
               </div>
@@ -424,11 +424,11 @@ const TicketDetail = () => {
                   <div className="flex-1">
                     <p className="text-sm font-medium">Ticket Created</p>
                     <p className="text-sm text-muted-foreground">
-                      {formatToDubaiTime(ticket.createdAt)}
+                      {formatToDubaiTime(ticket.created_at || ticket.createdAt)}
                     </p>
                   </div>
                 </div>
-                {ticket.closedAt && (
+                {(ticket.closed_at || ticket.closedAt) && (
                   <div className="flex gap-3">
                     <div className="mt-1 rounded-full bg-primary p-1">
                       <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground"></div>
@@ -436,7 +436,7 @@ const TicketDetail = () => {
                     <div className="flex-1">
                       <p className="text-sm font-medium">Ticket Closed</p>
                       <p className="text-sm text-muted-foreground">
-                        {formatToDubaiTime(ticket.closedAt)}
+                        {formatToDubaiTime(ticket.closed_at || ticket.closedAt)}
                       </p>
                     </div>
                   </div>

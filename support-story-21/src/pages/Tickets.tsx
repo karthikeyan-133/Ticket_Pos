@@ -279,18 +279,18 @@ const Tickets = () => {
                           to={`/tickets/${ticket.id}`}
                           className="text-primary hover:underline"
                         >
-                          {ticket.ticket_number}
+                          {ticket.ticket_number || `TICKET-${ticket.id}`}
                         </NavLink>
                       </TableCell>
-                      <TableCell>{ticket.serial_number}</TableCell>
-                      <TableCell className="text-foreground">{ticket.company_name}</TableCell>
-                      <TableCell className="text-foreground">{ticket.contact_person}</TableCell>
-                      <TableCell>{getIssueTypeLabel(ticket.issue_related)}</TableCell>
+                      <TableCell>{ticket.serial_number || 'N/A'}</TableCell>
+                      <TableCell className="text-foreground">{ticket.company_name || 'N/A'}</TableCell>
+                      <TableCell className="text-foreground">{ticket.contact_person || 'N/A'}</TableCell>
+                      <TableCell>{getIssueTypeLabel(ticket.issue_related || ticket.issueRelated || 'N/A')}</TableCell>
                       <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                       <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                      <TableCell className="text-foreground">{ticket.assigned_executive}</TableCell>
+                      <TableCell className="text-foreground">{ticket.assigned_executive || 'Unassigned'}</TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatToDubaiTime(ticket.created_at)}
+                        {formatToDubaiTime(ticket.created_at || ticket.createdAt)}
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
