@@ -71,16 +71,24 @@ const Sales = () => {
         assignedExecutive: filterExecutive
       });
       
-      setSales(Array.isArray(salesData) ? salesData : []);
+      // Ensure we always have an array
+      const salesArray = Array.isArray(salesData) ? salesData : [];
+      setSales(salesArray);
       
-      // Extract unique executives for filter
-      const uniqueExecutives = Array.from(
-        new Set(salesData.map(sale => sale.assignedExecutive).filter(Boolean))
-      );
-      setExecutives(uniqueExecutives);
+      // Extract unique executives for filter, but only if we have valid data
+      if (Array.isArray(salesData) && salesData.length > 0) {
+        const uniqueExecutives = Array.from(
+          new Set(salesData.map(sale => sale.assignedExecutive).filter(Boolean))
+        );
+        setExecutives(uniqueExecutives);
+      } else {
+        setExecutives([]);
+      }
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch sales. Please try again.';
       setError(errorMessage);
+      setSales([]);
+      setExecutives([]);
       toast({
         title: "Error",
         description: errorMessage,
