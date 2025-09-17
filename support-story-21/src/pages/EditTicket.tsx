@@ -68,7 +68,7 @@ const EditTicket = () => {
                 
                 // Ensure mobile number exists and is properly formatted
                 const mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
-                if (!mobileNumber) {
+                if (!mobileNumber || typeof mobileNumber !== 'string') {
                   toast({
                     title: "Error",
                     description: "Mobile number not available for WhatsApp message.",
@@ -77,7 +77,19 @@ const EditTicket = () => {
                   return;
                 }
                 
-                const cleanNumber = mobileNumber.replace(/\D/g, '');
+                // Safely clean the mobile number
+                let cleanNumber = '';
+                try {
+                  cleanNumber = mobileNumber.replace(/\D/g, '');
+                } catch (error) {
+                  toast({
+                    title: "Error",
+                    description: "Invalid mobile number format for WhatsApp message.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
                 if (!cleanNumber) {
                   toast({
                     title: "Error",
