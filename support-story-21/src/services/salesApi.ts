@@ -25,6 +25,9 @@ interface SalesQueryParams {
   assignedExecutive?: string;
 }
 
+// Increase timeout to 15 seconds to match backend timeout
+const API_TIMEOUT = 15000;
+
 export const salesAPI = {
   // Get all sales
   getAll: async (params?: SalesQueryParams): Promise<Sale[]> => {
@@ -40,9 +43,10 @@ export const salesAPI = {
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     
     try {
+      console.log('Fetching sales from:', url);
       const response = await fetch(url, {
         signal: controller.signal
       });
@@ -51,12 +55,16 @@ export const salesAPI = {
       if (!response.ok) {
         throw new Error(`Failed to fetch sales: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log('Successfully fetched sales data:', data ? data.length : 0, 'records');
+      return data;
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout: The server took too long to respond');
+        console.error('Request timeout: The server took too long to respond');
+        throw new Error('Request timeout: The server took too long to respond. Please try again or check if the database is accessible.');
       }
+      console.error('Error fetching sales:', error);
       throw error;
     }
   },
@@ -70,9 +78,10 @@ export const salesAPI = {
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     
     try {
+      console.log('Fetching sale by ID:', id);
       const response = await fetch(url, {
         signal: controller.signal
       });
@@ -81,12 +90,16 @@ export const salesAPI = {
       if (!response.ok) {
         throw new Error(`Failed to fetch sale: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log('Successfully fetched sale data:', data);
+      return data;
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout: The server took too long to respond');
+        console.error('Request timeout: The server took too long to respond');
+        throw new Error('Request timeout: The server took too long to respond. Please try again or check if the database is accessible.');
       }
+      console.error('Error fetching sale:', error);
       throw error;
     }
   },
@@ -100,9 +113,10 @@ export const salesAPI = {
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     
     try {
+      console.log('Creating new sale:', sale);
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -116,12 +130,16 @@ export const salesAPI = {
       if (!response.ok) {
         throw new Error(`Failed to create sale: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log('Successfully created sale:', data);
+      return data;
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout: The server took too long to respond');
+        console.error('Request timeout: The server took too long to respond');
+        throw new Error('Request timeout: The server took too long to respond. Please try again or check if the database is accessible.');
       }
+      console.error('Error creating sale:', error);
       throw error;
     }
   },
@@ -135,9 +153,10 @@ export const salesAPI = {
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     
     try {
+      console.log('Updating sale:', id, sale);
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -151,12 +170,16 @@ export const salesAPI = {
       if (!response.ok) {
         throw new Error(`Failed to update sale: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log('Successfully updated sale:', data);
+      return data;
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout: The server took too long to respond');
+        console.error('Request timeout: The server took too long to respond');
+        throw new Error('Request timeout: The server took too long to respond. Please try again or check if the database is accessible.');
       }
+      console.error('Error updating sale:', error);
       throw error;
     }
   },
@@ -170,9 +193,10 @@ export const salesAPI = {
     
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
     
     try {
+      console.log('Deleting sale:', id);
       const response = await fetch(url, {
         method: 'DELETE',
         signal: controller.signal
@@ -182,11 +206,14 @@ export const salesAPI = {
       if (!response.ok) {
         throw new Error(`Failed to delete sale: ${response.statusText}`);
       }
+      console.log('Successfully deleted sale:', id);
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new Error('Request timeout: The server took too long to respond');
+        console.error('Request timeout: The server took too long to respond');
+        throw new Error('Request timeout: The server took too long to respond. Please try again or check if the database is accessible.');
       }
+      console.error('Error deleting sale:', error);
       throw error;
     }
   },
