@@ -61,10 +61,32 @@ const EditTicket = () => {
           action: (
             <button 
               onClick={() => {
-                const message = `Hello ${updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer'}, your support ticket ${updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A'} has been resolved. Thank you for your patience!`;
-                // Ensure mobile number is properly formatted
+                // Ensure we have a contact person and ticket number
+                const contactPerson = updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer';
+                const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
+                const message = `Hello ${contactPerson}, your support ticket ${ticketNumber} has been resolved. Thank you for your patience!`;
+                
+                // Ensure mobile number exists and is properly formatted
                 const mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
+                if (!mobileNumber) {
+                  toast({
+                    title: "Error",
+                    description: "Mobile number not available for WhatsApp message.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
                 const cleanNumber = mobileNumber.replace(/\D/g, '');
+                if (!cleanNumber) {
+                  toast({
+                    title: "Error",
+                    description: "Invalid mobile number format for WhatsApp message.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                
                 // Add country code if not present (assuming UAE/India format)
                 const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
                 const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
