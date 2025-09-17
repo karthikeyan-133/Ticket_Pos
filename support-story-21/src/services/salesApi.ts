@@ -1,11 +1,15 @@
 // Sales API service
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+// Configure axios base URL to match the pattern used in api.ts
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
+  (import.meta.env.PROD ? 'https://ticket-pos-backend.vercel.app/api' : 'http://localhost:5000/api');
+
+console.log('Sales API Base URL:', API_BASE_URL);
 
 // Create axios instance with proper configuration
-const apiClient = axios.create({
-  baseURL: API_BASE_URL || '/api',
+const salesApiClient = axios.create({
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -13,7 +17,7 @@ const apiClient = axios.create({
 });
 
 // Request interceptor to log requests
-apiClient.interceptors.request.use(
+salesApiClient.interceptors.request.use(
   (config) => {
     console.log('Sales API Request:', config.method?.toUpperCase(), config.baseURL, config.url);
     return config;
@@ -24,7 +28,7 @@ apiClient.interceptors.request.use(
 );
 
 // Response interceptor to handle responses
-apiClient.interceptors.response.use(
+salesApiClient.interceptors.response.use(
   (response) => {
     console.log('Sales API Response:', response.status, response.config.url);
     return response;
@@ -36,7 +40,7 @@ apiClient.interceptors.response.use(
 );
 
 // Enhanced error handling function
-const handleApiError = (error: any, operation: string) => {
+const handleSalesApiError = (error: any, operation: string) => {
   console.error(`Error ${operation}:`, error);
   
   if (error.code === 'ECONNABORTED') {
@@ -60,6 +64,10 @@ const handleApiError = (error: any, operation: string) => {
     const { status, data } = error.response;
     if (status === 500) {
       throw new Error('Server error - Please check server logs');
+    }
+    // Handle HTML responses (like 404 pages)
+    if (typeof data === 'string' && data.includes('<!DOCTYPE html>')) {
+      throw new Error(`Server error (${status}) - API endpoint not found`);
     }
     throw new Error(data.message || `Server error (${status})`);
   } else if (error.request) {
@@ -99,12 +107,12 @@ export const salesAPI = {
   // Get all sales
   getAll: async (params?: SalesQueryParams): Promise<Sale[]> => {
     try {
-      const response = await apiClient.get('/sales', { params });
+      const response = await salesApiClient.get('/sales', { params });
       console.log('Sales API Response:', response.data);
       // Ensure we always return an array
       return Array.isArray(response.data) ? response.data : [];
     } catch (error) {
-      handleApiError(error, 'fetching sales');
+      handleSalesApiError(error, 'fetching sales');
       // Return empty array in case of error
       return [];
     }
@@ -113,10 +121,10 @@ export const salesAPI = {
   // Get sale by ID
   getById: async (id: string): Promise<Sale> => {
     try {
-      const response = await apiClient.get(`/sales/${id}`);
+      const response = await salesApiClient.get(`/sales/${id}`);
       return response.data;
     } catch (error) {
-      handleApiError(error, `fetching sale ${id}`);
+      handleSalesApiError(error, `fetching sale ${id}`);
       // Return empty object in case of error
       return {} as Sale;
     }
@@ -125,10 +133,10 @@ export const salesAPI = {
   // Create new sale
   create: async (sale: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>): Promise<Sale> => {
     try {
-      const response = await apiClient.post('/sales', sale);
+      const response = await salesApiClient.post('/sales', sale);
       return response.data;
     } catch (error) {
-      handleApiError(error, 'creating sale');
+      handleSalesApiError(error, 'creating sale');
       // Return empty object in case of error
       return {} as Sale;
     }
@@ -137,10 +145,10 @@ export const salesAPI = {
   // Update sale
   update: async (id: string, sale: Partial<Sale>): Promise<Sale> => {
     try {
-      const response = await apiClient.put(`/sales/${id}`, sale);
+      const response = await salesApiClient.put(`/sales/${id}`, sale);
       return response.data;
     } catch (error) {
-      handleApiError(error, `updating sale ${id}`);
+      handleSalesApiError(error, `updating sale ${id}`);
       // Return empty object in case of error
       return {} as Sale;
     }
@@ -149,9 +157,11 @@ export const salesAPI = {
   // Delete sale
   delete: async (id: string): Promise<void> => {
     try {
-      await apiClient.delete(`/sales/${id}`);
+      await salesApiClient.delete(`/sales/${id}`);
     } catch (error) {
-      handleApiError(error, `deleting sale ${id}`);
+      handleSalesApiError(error, `deleting sale ${id}`);
     }
   },
 };
+
+export default salesAPI;
