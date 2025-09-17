@@ -172,6 +172,25 @@ const ticketRoutes = async (req, res) => {
           remarks
         } = req.body || {};
         
+        // Check if ticket is being closed
+        let isClosing = false;
+        if (status === 'closed') {
+          // Get existing ticket to check if it was previously open
+          try {
+            const { data: existingData, error: existingError } = await req.supabase
+              .from('tickets')
+              .select('*')
+              .eq('id', ticketId)
+              .single();
+            
+            if (!existingError && existingData && existingData.status !== 'closed') {
+              isClosing = true;
+            }
+          } catch (error) {
+            console.log('Error checking existing ticket status:', error);
+          }
+        }
+        
         const updateData = {
           ticket_number: ticketNumber,
           serial_number: serialNumber,
@@ -190,6 +209,11 @@ const ticketRoutes = async (req, res) => {
           updated_at: new Date().toISOString()
         };
         
+        // Add closed_at timestamp if closing ticket
+        if (isClosing) {
+          updateData.closed_at = new Date().toISOString();
+        }
+        
         // Remove undefined fields
         Object.keys(updateData).forEach(key => {
           if (updateData[key] === undefined) {
@@ -204,6 +228,38 @@ const ticketRoutes = async (req, res) => {
           .select();
           
         if (error) throw error;
+        
+        // If ticket was closed, send notifications
+        if (isClosing && data && data[0]) {
+          console.log(`Ticket ${data[0].ticket_number} has been closed, sending notification...`);
+          try {
+            // Import notification service
+            const { sendTicketClosedNotifications } = await import('../server/services/notificationService.js');
+            
+            // Convert snake_case to camelCase for notification service
+            const ticketData = {
+              ...data[0],
+              ticketNumber: data[0].ticket_number,
+              serialNumber: data[0].serial_number,
+              companyName: data[0].company_name,
+              contactPerson: data[0].contact_person,
+              mobileNumber: data[0].mobile_number,
+              issueRelated: data[0].issue_related,
+              assignedExecutive: data[0].assigned_executive,
+              userType: data[0].user_type,
+              expiryDate: data[0].expiry_date,
+              createdAt: data[0].created_at,
+              updatedAt: data[0].updated_at,
+              closedAt: data[0].closed_at
+            };
+            
+            await sendTicketClosedNotifications(ticketData);
+            console.log(`Notification sent for ticket ${data[0].ticket_number}`);
+          } catch (notificationError) {
+            console.error(`Error sending notification for ticket ${data[0].ticket_number}:`, notificationError);
+          }
+        }
+        
         return res.json(data[0]);
       }
       

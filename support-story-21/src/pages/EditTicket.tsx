@@ -61,8 +61,13 @@ const EditTicket = () => {
           action: (
             <button 
               onClick={() => {
-                const message = `Hello ${updatedTicket.contactPerson}, your support ticket ${updatedTicket.ticketNumber} has been resolved. Thank you for your patience!`;
-                const whatsappUrl = `https://wa.me/${updatedTicket.mobileNumber.replace(/\D/g, '')}?text=${encodeURIComponent(message)}`;
+                const message = `Hello ${updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer'}, your support ticket ${updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A'} has been resolved. Thank you for your patience!`;
+                // Ensure mobile number is properly formatted
+                const mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
+                const cleanNumber = mobileNumber.replace(/\D/g, '');
+                // Add country code if not present (assuming UAE/India format)
+                const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
+                const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
                 window.open(whatsappUrl, '_blank');
               }}
               className="inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
@@ -111,6 +116,25 @@ const EditTicket = () => {
     );
   }
 
+  // Prepare initial data for the form, ensuring proper field mapping
+  const prepareInitialData = () => {
+    return {
+      serialNumber: ticket.serialNumber || ticket.serial_number || "",
+      companyName: ticket.companyName || ticket.company_name || "",
+      contactPerson: ticket.contactPerson || ticket.contact_person || "",
+      mobileNumber: ticket.mobileNumber || ticket.mobile_number || "",
+      email: ticket.email || "",
+      issueRelated: ticket.issueRelated || ticket.issue_related || "data",
+      priority: ticket.priority || "medium",
+      assignedExecutive: ticket.assignedExecutive || ticket.assigned_executive || "",
+      status: ticket.status || "open",
+      userType: ticket.userType || ticket.user_type || "single user",
+      expiryDate: ticket.expiryDate || ticket.expiry_date ? new Date(ticket.expiryDate || ticket.expiry_date) : undefined,
+      resolution: ticket.resolution || "",
+      remarks: ticket.remarks || "",
+    };
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -122,7 +146,7 @@ const EditTicket = () => {
 
       <div className="grid gap-6">
         <TicketForm 
-          initialData={ticket}
+          initialData={prepareInitialData()}
           onSubmit={onSubmit} 
           isLoading={isLoading}
           submitButtonText="Update Ticket"
