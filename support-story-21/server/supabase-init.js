@@ -146,6 +146,41 @@ async function initSupabase() {
       console.log('Sample tickets data inserted');
     }
 
+    // Create sales table
+    const { error: salesError } = await supabase.rpc('create_sales_table');
+    
+    if (salesError) {
+      console.log('Sales table may already exist or RPC not available:', salesError.message);
+      console.log('Please create the sales table manually in Supabase with the following structure:');
+      console.log(`
+        CREATE TABLE sales (
+          id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+          company_name VARCHAR(255) NOT NULL,
+          customer_name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          mobile_number VARCHAR(20) NOT NULL,
+          product_enquired VARCHAR(255) NOT NULL,
+          product_price DECIMAL(10, 2) NOT NULL,
+          assigned_executive VARCHAR(255),
+          date_of_enquiry TIMESTAMP WITH TIME ZONE NOT NULL,
+          next_follow_up_date TIMESTAMP WITH TIME ZONE,
+          last_call_details TEXT,
+          status_of_enquiry VARCHAR(20) NOT NULL, -- ENUM: 'hot', 'cold', 'won', 'under processing', 'dropped'
+          documents TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        );
+        
+        -- Create indexes
+        CREATE INDEX idx_sales_company_name ON sales(company_name);
+        CREATE INDEX idx_sales_customer_name ON sales(customer_name);
+        CREATE INDEX idx_sales_status_of_enquiry ON sales(status_of_enquiry);
+        CREATE INDEX idx_sales_assigned_executive ON sales(assigned_executive);
+      `);
+    } else {
+      console.log('Sales table created successfully');
+    }
+
     // Insert sample data for executives
     const { error: executivesInsertError } = await supabase
       .from('executives')
@@ -188,6 +223,48 @@ async function initSupabase() {
       console.log('Error inserting sample executives:', executivesInsertError.message);
     } else {
       console.log('Sample executives data inserted');
+    }
+
+    // Insert sample data for sales
+    const { error: salesInsertError } = await supabase
+      .from('sales')
+      .upsert([
+        {
+          id: '1',
+          company_name: 'Tech Solutions Inc.',
+          customer_name: 'John Doe',
+          email: 'john.doe@example.com',
+          mobile_number: '+971501234567',
+          product_enquired: 'Tally ERP 9',
+          product_price: 15000.00,
+          assigned_executive: 'Sarah Johnson',
+          date_of_enquiry: '2025-09-01T10:00:00Z',
+          next_follow_up_date: '2025-09-08T10:00:00Z',
+          last_call_details: 'Initial discussion about product features',
+          status_of_enquiry: 'hot',
+          documents: 'https://example.com/docs/tally-brochure.pdf'
+        },
+        {
+          id: '2',
+          company_name: 'Global Systems Ltd.',
+          customer_name: 'Jane Smith',
+          email: 'jane.smith@example.com',
+          mobile_number: '+971509876543',
+          product_enquired: 'Tally Prime',
+          product_price: 25000.00,
+          assigned_executive: 'Mike Wilson',
+          date_of_enquiry: '2025-09-02T14:30:00Z',
+          next_follow_up_date: '2025-09-09T14:30:00Z',
+          last_call_details: 'Sent product demo link',
+          status_of_enquiry: 'under processing',
+          documents: 'https://example.com/docs/tally-prime-brochure.pdf'
+        }
+      ], { onConflict: 'id' });
+
+    if (salesInsertError) {
+      console.log('Error inserting sample sales:', salesInsertError.message);
+    } else {
+      console.log('Sample sales data inserted');
     }
 
     console.log('Supabase initialization completed');

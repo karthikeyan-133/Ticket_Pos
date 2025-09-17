@@ -15,6 +15,10 @@ import TestPage from "./pages/TestPage";
 import Diagnostics from "./pages/Diagnostics";
 import Settings from "./pages/Settings";
 import ApiTestPage from "./pages/ApiTestPage";
+import Sales from "./pages/Sales";
+import NewSale from "./pages/NewSale";
+import SaleDetail from "./pages/SaleDetail";
+import EditSale from "./pages/EditSale";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +36,10 @@ function App() {
               <Route path="/tickets/new" element={<NewTicket />} />
               <Route path="/tickets/:id" element={<TicketDetail />} />
               <Route path="/tickets/:id/edit" element={<EditTicket />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/sales/new" element={<NewSale />} />
+              <Route path="/sales/:id" element={<SaleDetail />} />
+              <Route path="/sales/:id/edit" element={<EditSale />} />
               <Route path="/executives" element={<Executives />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/diagnostics" element={<Diagnostics />} />

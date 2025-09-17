@@ -15,6 +15,7 @@ import supabase from './config/supabase.js';
 
 import ticketRoutes from './routes/tickets.js';
 import executiveRoutes from './routes/executives.js';
+import salesRoutes from './routes/sales.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -78,6 +79,7 @@ app.get('/api/health', async (req, res) => {
 // Routes
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/executives', executiveRoutes);
+app.use('/api/sales', salesRoutes);
 
 // React SPA fallback (last)
 app.get('*', (req, res) => {

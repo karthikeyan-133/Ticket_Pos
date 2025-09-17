@@ -4,7 +4,8 @@ import {
   BarChart3,
   Settings,
   Plus,
-  Wrench
+  Wrench,
+  ShoppingCart
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -32,6 +33,12 @@ const navigation = [
     name: "Tickets", 
     href: "/tickets", 
     icon: Ticket,
+    current: false 
+  },
+  { 
+    name: "Sales", 
+    href: "/sales", 
+    icon: ShoppingCart,
     current: false 
   },
   { 

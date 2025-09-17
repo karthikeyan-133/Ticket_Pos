@@ -60,6 +60,14 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Features
+
+- Ticket Management System
+- Executive Management
+- Sales Enquiry Tracking
+- Dashboard Analytics
+- API Integration
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/3aa8a1a8-00d7-45e5-b495-bd2e4cb882a1) and click on Share -> Publish.
