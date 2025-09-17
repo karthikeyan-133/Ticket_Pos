@@ -10,6 +10,7 @@ const __dirname = dirname(__filename);
 // Import route handlers
 import ticketRoutes from './tickets.js';
 import executiveRoutes from './executives.js';
+import salesRoutes from './sales.js';
 
 // Initialize Supabase client for Vercel environment
 let supabase = null;
@@ -239,6 +240,41 @@ const handler = async (req, res) => {
       };
       
       await executiveRoutes(executiveReq, executiveRes);
+      return;
+    }
+    
+    // Sales routes
+    if (path.startsWith('/api/sales')) {
+      const salesPath = path.substring('/api/sales'.length) || '/';
+      const salesReq = {
+        ...req,
+        url: salesPath,
+        path: salesPath,
+        params: {},
+        query: Object.fromEntries(url.searchParams)
+      };
+      
+      // Extract ID from path if present
+      const pathParts = salesPath.split('/').filter(Boolean);
+      if (pathParts.length > 0 && pathParts[0]) {
+        salesReq.params.id = pathParts[0];
+      }
+      
+      const salesRes = {
+        status: (code) => {
+          res.statusCode = code;
+          return salesRes;
+        },
+        json: (data) => {
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(data));
+        },
+        send: (data) => {
+          res.end(data);
+        }
+      };
+      
+      await salesRoutes(salesReq, salesRes);
       return;
     }
     

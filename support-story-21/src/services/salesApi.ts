@@ -1,5 +1,5 @@
 // Sales API service
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 interface Sale {
   id?: string;
@@ -33,7 +33,12 @@ export const salesAPI = {
     if (params?.statusOfEnquiry) queryParams.append('statusOfEnquiry', params.statusOfEnquiry);
     if (params?.assignedExecutive) queryParams.append('assignedExecutive', params.assignedExecutive);
     
-    const response = await fetch(`${API_BASE_URL}/api/sales?${queryParams.toString()}`);
+    // For Vercel deployment, we use relative paths
+    const url = API_BASE_URL 
+      ? `${API_BASE_URL}/api/sales?${queryParams.toString()}`
+      : `/api/sales?${queryParams.toString()}`;
+    
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch sales: ${response.statusText}`);
     }
@@ -42,7 +47,12 @@ export const salesAPI = {
 
   // Get sale by ID
   getById: async (id: string): Promise<Sale> => {
-    const response = await fetch(`${API_BASE_URL}/api/sales/${id}`);
+    // For Vercel deployment, we use relative paths
+    const url = API_BASE_URL 
+      ? `${API_BASE_URL}/api/sales/${id}`
+      : `/api/sales/${id}`;
+    
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch sale: ${response.statusText}`);
     }
@@ -51,7 +61,12 @@ export const salesAPI = {
 
   // Create new sale
   create: async (sale: Omit<Sale, 'id' | 'createdAt' | 'updatedAt'>): Promise<Sale> => {
-    const response = await fetch(`${API_BASE_URL}/api/sales`, {
+    // For Vercel deployment, we use relative paths
+    const url = API_BASE_URL 
+      ? `${API_BASE_URL}/api/sales`
+      : `/api/sales`;
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -67,7 +82,12 @@ export const salesAPI = {
 
   // Update sale
   update: async (id: string, sale: Partial<Sale>): Promise<Sale> => {
-    const response = await fetch(`${API_BASE_URL}/api/sales/${id}`, {
+    // For Vercel deployment, we use relative paths
+    const url = API_BASE_URL 
+      ? `${API_BASE_URL}/api/sales/${id}`
+      : `/api/sales/${id}`;
+    
+    const response = await fetch(url, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -83,7 +103,12 @@ export const salesAPI = {
 
   // Delete sale
   delete: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/sales/${id}`, {
+    // For Vercel deployment, we use relative paths
+    const url = API_BASE_URL 
+      ? `${API_BASE_URL}/api/sales/${id}`
+      : `/api/sales/${id}`;
+    
+    const response = await fetch(url, {
       method: 'DELETE',
     });
     
