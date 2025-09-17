@@ -95,8 +95,10 @@ FRONTEND_URL=https://ticket-pos.vercel.app
 For the frontend, make sure you have the following in your `.env` file:
 
 ```
-VITE_API_URL=https://ticket-pos-backend.vercel.app/api
+VITE_API_BASE_URL=
 ```
+
+Note: For Vercel deployments, `VITE_API_BASE_URL` should be empty so that the frontend makes requests to the same domain.
 
 ### Deployment Steps
 
@@ -112,6 +114,14 @@ If you still encounter issues:
 2. Verify that the Supabase credentials are correct
 3. Check the deployment logs for any error messages
 4. Make sure there are no typos in the environment variable names
+5. Test the API endpoints directly using the diagnostic tool at `/api-diagnostic.html`
+
+### Testing API Endpoints
+
+You can test the API endpoints directly by visiting:
+- `https://ticket-pos.vercel.app/api/health` - General API health check
+- `https://ticket-pos.vercel.app/api/sales/health` - Sales API health check
+- `https://ticket-pos.vercel.app/api/test` - Basic connectivity test
 
 ## Can I connect a custom domain to my Lovable project?
 

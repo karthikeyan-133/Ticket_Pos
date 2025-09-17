@@ -38,11 +38,27 @@ export const salesAPI = {
       ? `${API_BASE_URL}/api/sales?${queryParams.toString()}`
       : `/api/sales?${queryParams.toString()}`;
     
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch sales: ${response.statusText}`);
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sales: ${response.statusText}`);
+      }
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout: The server took too long to respond');
+      }
+      throw error;
     }
-    return response.json();
   },
 
   // Get sale by ID
@@ -52,11 +68,27 @@ export const salesAPI = {
       ? `${API_BASE_URL}/api/sales/${id}`
       : `/api/sales/${id}`;
     
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch sale: ${response.statusText}`);
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    try {
+      const response = await fetch(url, {
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sale: ${response.statusText}`);
+      }
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout: The server took too long to respond');
+      }
+      throw error;
     }
-    return response.json();
   },
 
   // Create new sale
@@ -66,18 +98,32 @@ export const salesAPI = {
       ? `${API_BASE_URL}/api/sales`
       : `/api/sales`;
     
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(sale),
-    });
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    if (!response.ok) {
-      throw new Error(`Failed to create sale: ${response.statusText}`);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sale),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create sale: ${response.statusText}`);
+      }
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout: The server took too long to respond');
+      }
+      throw error;
     }
-    return response.json();
   },
 
   // Update sale
@@ -87,18 +133,32 @@ export const salesAPI = {
       ? `${API_BASE_URL}/api/sales/${id}`
       : `/api/sales/${id}`;
     
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(sale),
-    });
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    if (!response.ok) {
-      throw new Error(`Failed to update sale: ${response.statusText}`);
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sale),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update sale: ${response.statusText}`);
+      }
+      return response.json();
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout: The server took too long to respond');
+      }
+      throw error;
     }
-    return response.json();
   },
 
   // Delete sale
@@ -108,12 +168,26 @@ export const salesAPI = {
       ? `${API_BASE_URL}/api/sales/${id}`
       : `/api/sales/${id}`;
     
-    const response = await fetch(url, {
-      method: 'DELETE',
-    });
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    if (!response.ok) {
-      throw new Error(`Failed to delete sale: ${response.statusText}`);
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete sale: ${response.statusText}`);
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout: The server took too long to respond');
+      }
+      throw error;
     }
   },
 };

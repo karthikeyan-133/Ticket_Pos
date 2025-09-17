@@ -235,7 +235,24 @@ const handler = async (req, res) => {
         }
       };
       
-      await ticketRoutes(ticketReq, ticketRes);
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API handler timeout')), 20000); // 20 second timeout
+      });
+      
+      const routeHandlerPromise = ticketRoutes(ticketReq, ticketRes);
+      
+      try {
+        await Promise.race([routeHandlerPromise, timeoutPromise]);
+      } catch (timeoutError) {
+        console.error('API handler timeout:', timeoutError.message);
+        if (!res.headersSent) {
+          res.status(504).json({ 
+            error: 'API handler timeout', 
+            message: 'The API request timed out. Please try again.' 
+          });
+        }
+      }
       return;
     }
     
@@ -270,7 +287,24 @@ const handler = async (req, res) => {
         }
       };
       
-      await executiveRoutes(executiveReq, executiveRes);
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API handler timeout')), 20000); // 20 second timeout
+      });
+      
+      const routeHandlerPromise = executiveRoutes(executiveReq, executiveRes);
+      
+      try {
+        await Promise.race([routeHandlerPromise, timeoutPromise]);
+      } catch (timeoutError) {
+        console.error('API handler timeout:', timeoutError.message);
+        if (!res.headersSent) {
+          res.status(504).json({ 
+            error: 'API handler timeout', 
+            message: 'The API request timed out. Please try again.' 
+          });
+        }
+      }
       return;
     }
     
@@ -307,7 +341,7 @@ const handler = async (req, res) => {
       
       // Add timeout to prevent hanging requests
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('API handler timeout')), 15000); // 15 second timeout
+        setTimeout(() => reject(new Error('API handler timeout')), 20000); // 20 second timeout
       });
       
       const routeHandlerPromise = salesRoutes(salesReq, salesRes);
