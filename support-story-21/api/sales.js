@@ -19,7 +19,25 @@ const salesRoutes = async (req, res) => {
           throw error;
         }
         console.log('Successfully fetched sales data:', data ? data.length : 0, 'records');
-        return res.json(data);
+        
+        // Convert snake_case to camelCase for the response
+        const convertedData = data.map(sale => ({
+          ...sale,
+          companyName: sale.company_name,
+          customerName: sale.customer_name,
+          mobileNumber: sale.mobile_number,
+          productEnquired: sale.product_enquired,
+          productPrice: sale.product_price,
+          assignedExecutive: sale.assigned_executive,
+          dateOfEnquiry: sale.date_of_enquiry,
+          nextFollowUpDate: sale.next_follow_up_date,
+          lastCallDetails: sale.last_call_details,
+          statusOfEnquiry: sale.status_of_enquiry,
+          createdAt: sale.created_at,
+          updatedAt: sale.updated_at
+        }));
+        
+        return res.json(convertedData);
       }
       
       // Otherwise, return mock data
@@ -28,14 +46,20 @@ const salesRoutes = async (req, res) => {
         { 
           id: 1, 
           company_name: 'Sample Company 1', 
+          companyName: 'Sample Company 1',
           customer_name: 'John Doe',
-          status_of_enquiry: 'hot' 
+          customerName: 'John Doe',
+          status_of_enquiry: 'hot',
+          statusOfEnquiry: 'hot'
         },
         { 
           id: 2, 
           company_name: 'Sample Company 2', 
+          companyName: 'Sample Company 2',
           customer_name: 'Jane Smith',
-          status_of_enquiry: 'cold' 
+          customerName: 'Jane Smith',
+          status_of_enquiry: 'cold',
+          statusOfEnquiry: 'cold'
         }
       ]);
     }
@@ -51,7 +75,25 @@ const salesRoutes = async (req, res) => {
           throw error;
         }
         console.log('Successfully fetched sale data:', data);
-        return res.json(data);
+        
+        // Convert snake_case to camelCase for the response
+        const convertedData = {
+          ...data,
+          companyName: data.company_name,
+          customerName: data.customer_name,
+          mobileNumber: data.mobile_number,
+          productEnquired: data.product_enquired,
+          productPrice: data.product_price,
+          assignedExecutive: data.assigned_executive,
+          dateOfEnquiry: data.date_of_enquiry,
+          nextFollowUpDate: data.next_follow_up_date,
+          lastCallDetails: data.last_call_details,
+          statusOfEnquiry: data.status_of_enquiry,
+          createdAt: data.created_at,
+          updatedAt: data.updated_at
+        };
+        
+        return res.json(convertedData);
       }
       
       // Otherwise, return mock data
@@ -60,14 +102,20 @@ const salesRoutes = async (req, res) => {
         { 
           id: 1, 
           company_name: 'Sample Company 1', 
+          companyName: 'Sample Company 1',
           customer_name: 'John Doe',
-          status_of_enquiry: 'hot' 
+          customerName: 'John Doe',
+          status_of_enquiry: 'hot',
+          statusOfEnquiry: 'hot'
         },
         { 
           id: 2, 
           company_name: 'Sample Company 2', 
+          companyName: 'Sample Company 2',
           customer_name: 'Jane Smith',
-          status_of_enquiry: 'cold' 
+          customerName: 'Jane Smith',
+          status_of_enquiry: 'cold',
+          statusOfEnquiry: 'cold'
         }
       ];
       const sale = sales.find(s => s.id == saleId);

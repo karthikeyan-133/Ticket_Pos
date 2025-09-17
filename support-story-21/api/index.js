@@ -227,10 +227,14 @@ const handler = async (req, res) => {
           return ticketRes;
         },
         json: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(data));
         },
         send: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.end(data);
         }
       };
@@ -262,10 +266,14 @@ const handler = async (req, res) => {
           return executiveRes;
         },
         json: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(data));
         },
         send: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.end(data);
         }
       };
@@ -297,10 +305,14 @@ const handler = async (req, res) => {
           return salesRes;
         },
         json: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.setHeader('Content-Type', 'application/json');
           res.end(JSON.stringify(data));
         },
         send: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
           res.end(data);
         }
       };
