@@ -12,9 +12,24 @@ const salesRoutes = async (req, res) => {
     if (method === 'GET' && path === '/') {
       // If we have a Supabase client, use it
       if (req.supabase) {
-        const { data, error } = await req.supabase.from('sales').select('*');
-        if (error) throw error;
-        return res.json(data);
+        // Add a timeout to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database request timeout')), 10000); // 10 second timeout
+        });
+        
+        const supabasePromise = req.supabase.from('sales').select('*');
+        
+        try {
+          const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+          if (error) throw error;
+          return res.json(data);
+        } catch (timeoutError) {
+          console.error('Database timeout error:', timeoutError.message);
+          return res.status(504).json({ 
+            error: 'Database timeout', 
+            message: 'The database request timed out. Please try again.' 
+          });
+        }
       }
       
       // Otherwise, return mock data
@@ -38,9 +53,24 @@ const salesRoutes = async (req, res) => {
     if (method === 'GET' && saleId) {
       // If we have a Supabase client, use it
       if (req.supabase) {
-        const { data, error } = await req.supabase.from('sales').select('*').eq('id', saleId).single();
-        if (error) throw error;
-        return res.json(data);
+        // Add a timeout to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database request timeout')), 10000); // 10 second timeout
+        });
+        
+        const supabasePromise = req.supabase.from('sales').select('*').eq('id', saleId).single();
+        
+        try {
+          const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+          if (error) throw error;
+          return res.json(data);
+        } catch (timeoutError) {
+          console.error('Database timeout error:', timeoutError.message);
+          return res.status(504).json({ 
+            error: 'Database timeout', 
+            message: 'The database request timed out. Please try again.' 
+          });
+        }
       }
       
       // Otherwise, return mock data
@@ -92,7 +122,12 @@ const salesRoutes = async (req, res) => {
           });
         }
         
-        const { data, error } = await req.supabase
+        // Add a timeout to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database request timeout')), 10000); // 10 second timeout
+        });
+        
+        const supabasePromise = req.supabase
           .from('sales')
           .insert([{
             company_name: companyName,
@@ -112,11 +147,20 @@ const salesRoutes = async (req, res) => {
           }])
           .select();
           
-        if (error) {
-          console.error('Supabase insert error:', error);
-          throw error;
+        try {
+          const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+          if (error) {
+            console.error('Supabase insert error:', error);
+            throw error;
+          }
+          return res.status(201).json(data[0]);
+        } catch (timeoutError) {
+          console.error('Database timeout error:', timeoutError.message);
+          return res.status(504).json({ 
+            error: 'Database timeout', 
+            message: 'The database request timed out. Please try again.' 
+          });
         }
-        return res.status(201).json(data[0]);
       }
       
       // Otherwise, use mock data
@@ -184,17 +228,31 @@ const salesRoutes = async (req, res) => {
           }
         });
         
-        const { data, error } = await req.supabase
+        // Add a timeout to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database request timeout')), 10000); // 10 second timeout
+        });
+        
+        const supabasePromise = req.supabase
           .from('sales')
           .update(updateData)
           .eq('id', saleId)
           .select();
           
-        if (error) {
-          console.error('Supabase update error:', error);
-          throw error;
+        try {
+          const { data, error } = await Promise.race([supabasePromise, timeoutPromise]);
+          if (error) {
+            console.error('Supabase update error:', error);
+            throw error;
+          }
+          return res.json(data[0]);
+        } catch (timeoutError) {
+          console.error('Database timeout error:', timeoutError.message);
+          return res.status(504).json({ 
+            error: 'Database timeout', 
+            message: 'The database request timed out. Please try again.' 
+          });
         }
-        return res.json(data[0]);
       }
       
       // Otherwise, use mock data
@@ -209,12 +267,27 @@ const salesRoutes = async (req, res) => {
     if (method === 'DELETE' && saleId) {
       // If we have a Supabase client, use it
       if (req.supabase) {
-        const { error } = await req.supabase.from('sales').delete().eq('id', saleId);
-        if (error) {
-          console.error('Supabase delete error:', error);
-          throw error;
+        // Add a timeout to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Database request timeout')), 10000); // 10 second timeout
+        });
+        
+        const supabasePromise = req.supabase.from('sales').delete().eq('id', saleId);
+        
+        try {
+          const { error } = await Promise.race([supabasePromise, timeoutPromise]);
+          if (error) {
+            console.error('Supabase delete error:', error);
+            throw error;
+          }
+          return res.status(204).send();
+        } catch (timeoutError) {
+          console.error('Database timeout error:', timeoutError.message);
+          return res.status(504).json({ 
+            error: 'Database timeout', 
+            message: 'The database request timed out. Please try again.' 
+          });
         }
-        return res.status(204).send();
       }
       
       // Otherwise, use mock data

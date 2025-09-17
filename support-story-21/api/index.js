@@ -20,6 +20,11 @@ try {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_KEY;
   
+  console.log('Attempting to initialize Supabase with:', {
+    url: supabaseUrl ? 'SET' : 'NOT SET',
+    key: supabaseKey ? 'SET' : 'NOT SET'
+  });
+  
   if (supabaseUrl && supabaseKey) {
     supabase = createClient(supabaseUrl, supabaseKey);
     console.log('Supabase client initialized successfully in Vercel environment');
@@ -75,6 +80,15 @@ const corsMiddleware = (req, res) => {
 
 // Main Vercel serverless function handler
 const handler = async (req, res) => {
+  console.log('API Request:', {
+    method: req.method,
+    url: req.url,
+    headers: {
+      origin: req.headers.origin,
+      'user-agent': req.headers['user-agent']
+    }
+  });
+  
   // Handle CORS preflight requests
   if (corsMiddleware(req, res)) {
     return;
@@ -291,7 +305,24 @@ const handler = async (req, res) => {
         }
       };
       
-      await salesRoutes(salesReq, salesRes);
+      // Add timeout to prevent hanging requests
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('API handler timeout')), 15000); // 15 second timeout
+      });
+      
+      const routeHandlerPromise = salesRoutes(salesReq, salesRes);
+      
+      try {
+        await Promise.race([routeHandlerPromise, timeoutPromise]);
+      } catch (timeoutError) {
+        console.error('API handler timeout:', timeoutError.message);
+        if (!res.headersSent) {
+          res.status(504).json({ 
+            error: 'API handler timeout', 
+            message: 'The API request timed out. Please try again.' 
+          });
+        }
+      }
       return;
     }
     
@@ -301,10 +332,12 @@ const handler = async (req, res) => {
   } catch (error) {
     console.error('API Error:', error);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.status(500).json({ 
-      error: 'Something went wrong!',
-      message: error.message 
-    });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        error: 'Something went wrong!',
+        message: error.message 
+      });
+    }
   }
 };
 
