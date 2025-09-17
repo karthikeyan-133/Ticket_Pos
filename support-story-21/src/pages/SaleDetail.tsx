@@ -3,6 +3,7 @@ import { ArrowLeft, Edit, Calendar, Phone, Mail, FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { salesAPI } from "@/services/salesApi";
 import { toast } from "@/components/ui/use-toast";
