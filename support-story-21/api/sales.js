@@ -85,6 +85,13 @@ const salesRoutes = async (req, res) => {
           documents
         } = req.body || {};
         
+        // Validate required fields
+        if (!companyName || !customerName || !email) {
+          return res.status(400).json({ 
+            error: 'Missing required fields: companyName, customerName, and email are required' 
+          });
+        }
+        
         const { data, error } = await req.supabase
           .from('sales')
           .insert([{
@@ -105,7 +112,10 @@ const salesRoutes = async (req, res) => {
           }])
           .select();
           
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase insert error:', error);
+          throw error;
+        }
         return res.status(201).json(data[0]);
       }
       
@@ -180,7 +190,10 @@ const salesRoutes = async (req, res) => {
           .eq('id', saleId)
           .select();
           
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase update error:', error);
+          throw error;
+        }
         return res.json(data[0]);
       }
       
@@ -197,7 +210,10 @@ const salesRoutes = async (req, res) => {
       // If we have a Supabase client, use it
       if (req.supabase) {
         const { error } = await req.supabase.from('sales').delete().eq('id', saleId);
-        if (error) throw error;
+        if (error) {
+          console.error('Supabase delete error:', error);
+          throw error;
+        }
         return res.status(204).send();
       }
       
@@ -209,7 +225,11 @@ const salesRoutes = async (req, res) => {
     return res.status(404).json({ error: 'Route not found' });
   } catch (error) {
     console.error('Sales API Error:', error);
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      error: 'Failed to process sales request',
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error : undefined
+    });
   }
 };
 

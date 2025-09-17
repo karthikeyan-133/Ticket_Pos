@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales API Diagnostic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sales API Diagnostic Tool</h1>
+        
+        <div class="test-section info">
+            <h2>API Health Check</h2>
+            <button id="checkHealth">Check API Health</button>
+            <button id="checkSalesHealth">Check Sales Health</button>
+            <div id="healthResult"></div>
+        </div>
+        
+        <div class="test-section info">
+            <h2>Get All Sales</h2>
+            <button id="getAllSales">Get All Sales</button>
+            <div id="getAllSalesResult"></div>
+        </div>
+        
+        <div class="test-section info">
+            <h2>Create Test Sale</h2>
+            <button id="createTestSale">Create Test Sale</button>
+            <div id="createTestSaleResult"></div>
+        </div>
+        
+        <div class="test-section info">
+            <h2>Sales Table Schema</h2>
+            <button id="getTableSchema">Get Table Schema</button>
+            <div id="getTableSchemaResult"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = '';
+        
+        // Helper function to display results
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `
+                <div class="test-section ${isError ? 'error' : 'success'}">
+                    <h3>Response:</h3>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        // Helper function to display error
+        function displayError(elementId, error) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `
+                <div class="test-section error">
+                    <h3>Error:</h3>
+                    <pre>${JSON.stringify(error, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        // Check API Health
+        document.getElementById('checkHealth').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/health`);
+                const data = await response.json();
+                displayResult('healthResult', data);
+            } catch (error) {
+                displayError('healthResult', error);
+            }
+        });
+        
+        // Check Sales Health
+        document.getElementById('checkSalesHealth').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/sales/health`);
+                const data = await response.json();
+                displayResult('healthResult', data);
+            } catch (error) {
+                displayError('healthResult', error);
+            }
+        });
+        
+        // Get All Sales
+        document.getElementById('getAllSales').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/sales`);
+                const data = await response.json();
+                displayResult('getAllSalesResult', data);
+            } catch (error) {
+                displayError('getAllSalesResult', error);
+            }
+        });
+        
+        // Create Test Sale
+        document.getElementById('createTestSale').addEventListener('click', async () => {
+            try {
+                const testSale = {
+                    companyName: 'Test Company',
+                    customerName: 'Test Customer',
+                    email: 'test@example.com',
+                    mobileNumber: '+1234567890',
+                    productEnquired: 'Test Product',
+                    productPrice: 1000,
+                    assignedExecutive: 'Test Executive',
+                    dateOfEnquiry: new Date().toISOString(),
+                    nextFollowUpDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    lastCallDetails: 'Test call details',
+                    statusOfEnquiry: 'hot',
+                    documents: ''
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/api/sales`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testSale),
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    displayResult('createTestSaleResult', data);
+                } else {
+                    displayError('createTestSaleResult', data);
+                }
+            } catch (error) {
+                displayError('createTestSaleResult', error);
+            }
+        });
+        
+        // Get Table Schema
+        document.getElementById('getTableSchema').addEventListener('click', async () => {
+            try {
+                // This would typically be a special endpoint or you'd need to check via Supabase directly
+                const response = await fetch(`${API_BASE_URL}/api/health`);
+                const data = await response.json();
+                displayResult('getTableSchemaResult', {
+                    message: 'In a real implementation, this would show the sales table schema',
+                    note: 'Check your Supabase dashboard for the actual table schema',
+                    healthData: data
+                });
+            } catch (error) {
+                displayError('getTableSchemaResult', error);
+            }
+        });
+    </script>
+</body>
+</html>

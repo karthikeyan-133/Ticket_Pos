@@ -111,13 +111,28 @@ const handler = async (req, res) => {
     if (path === '/' && req.method === 'GET') {
       res.status(200).json({ 
         message: 'Ticket System API is running!',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        supabaseInitialized: !!supabase
       });
       return;
     }
     
     // Health check endpoint
     if (path === '/api/health' && req.method === 'GET') {
+      // Set CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      res.status(200).json({ 
+        message: 'Server is running!',
+        supabaseInitialized: !!supabase,
+        supabaseUrl: process.env.SUPABASE_URL ? 'SET' : 'NOT SET',
+        supabaseKey: process.env.SUPABASE_KEY ? 'SET' : 'NOT SET'
+      });
+      return;
+    }
+    
+    // Sales health check endpoint
+    if (path === '/api/sales/health' && req.method === 'GET') {
       // Set CORS headers
       res.setHeader('Access-Control-Allow-Origin', '*');
       
@@ -129,9 +144,9 @@ const handler = async (req, res) => {
       }
 
       try {
-        // Test Supabase connection by querying a simple record
+        // Test Supabase connection by querying the sales table
         const { data, error } = await supabase
-          .from('tickets')
+          .from('sales')
           .select('id')
           .limit(1);
 
@@ -140,15 +155,17 @@ const handler = async (req, res) => {
         }
 
         res.status(200).json({ 
-          message: 'Server is running!',
+          message: 'Sales API is working!',
           database: 'Connected to Supabase',
           testResult: data
         });
         return;
       } catch (error) {
         res.status(500).json({ 
-          message: 'Server is running but database connection failed',
-          error: error.message 
+          message: 'Sales API is running but database connection failed',
+          error: error.message,
+          supabaseUrl: process.env.SUPABASE_URL ? 'SET' : 'NOT SET',
+          supabaseKey: process.env.SUPABASE_KEY ? 'SET' : 'NOT SET'
         });
         return;
       }
