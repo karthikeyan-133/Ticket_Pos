@@ -182,7 +182,21 @@ const TicketDetail = () => {
             <button 
               onClick={() => {
                 try {
-                  const message = `Hello ${ticket.contactPerson || ticket.contact_person || 'Customer'}, your support ticket ${ticket.ticketNumber || ticket.ticket_number || 'N/A'} has been resolved. Resolution: ${resolution || 'No resolution details provided.'}`;
+                  // Create a more detailed and properly formatted message
+                  const contactPerson = ticket.contactPerson || ticket.contact_person || 'Customer';
+                  const ticketNumber = ticket.ticketNumber || ticket.ticket_number || 'N/A';
+                  
+                  // Include resolution details in the message
+                  const message = `Hello ${contactPerson},
+
+Your support ticket ${ticketNumber} has been resolved.
+
+Resolution Details:
+${resolution || 'No resolution details provided.'}
+
+Thank you for your patience!
+
+Techzon Support Team`;
                   
                   // Ensure mobile number exists and is properly formatted
                   let mobileNumber = ticket.mobileNumber || ticket.mobile_number || '';
@@ -229,7 +243,12 @@ const TicketDetail = () => {
                   
                   // Add country code if not present (assuming UAE/India format)
                   const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
-                  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+                  
+                  // Properly encode the message for URL
+                  const encodedMessage = encodeURIComponent(message);
+                  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+                  
+                  console.log('WhatsApp URL:', whatsappUrl); // For debugging
                   window.open(whatsappUrl, '_blank');
                 } catch (error) {
                   console.error('Error in WhatsApp redirect:', error);

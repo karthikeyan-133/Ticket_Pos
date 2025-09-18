@@ -65,7 +65,15 @@ const EditTicket = () => {
                   // Ensure we have a contact person and ticket number
                   const contactPerson = updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer';
                   const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
-                  const message = `Hello ${contactPerson}, your support ticket ${ticketNumber} has been resolved. Thank you for your patience!`;
+                  
+                  // Create a more detailed and properly formatted message
+                  const message = `Hello ${contactPerson},
+
+Your support ticket ${ticketNumber} has been resolved.
+
+Thank you for your patience!
+
+Techzon Support Team`;
                   
                   // Ensure mobile number exists and is properly formatted
                   let mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
@@ -112,7 +120,12 @@ const EditTicket = () => {
                   
                   // Add country code if not present (assuming UAE/India format)
                   const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
-                  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+                  
+                  // Properly encode the message for URL
+                  const encodedMessage = encodeURIComponent(message);
+                  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+                  
+                  console.log('WhatsApp URL:', whatsappUrl); // For debugging
                   window.open(whatsappUrl, '_blank');
                 } catch (error) {
                   console.error('Error in WhatsApp redirect:', error);
