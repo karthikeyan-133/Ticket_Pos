@@ -161,6 +161,51 @@ const handler = async (req, res) => {
       return;
     }
     
+    // Test email sending endpoint
+    if (path === '/api/test-email-send' && req.method === 'POST') {
+      // Set CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      try {
+        // Import notification service
+        const notificationService = await import('../server/services/notificationService.js');
+        const sendEmailNotification = notificationService.sendEmailNotification;
+        
+        // Get test email from request body or use default
+        const { toEmail, subject, message } = req.body || {};
+        
+        // Create a test ticket object
+        const testTicket = {
+          ticketNumber: 'TEST-001',
+          contactPerson: 'Test User',
+          email: toEmail || 'test@example.com',
+          issueRelated: 'Test Issue',
+          priority: 'medium',
+          createdAt: new Date().toISOString(),
+          closedAt: new Date().toISOString(),
+          resolution: message || 'This is a test email from the ticket system.'
+        };
+        
+        // Send test email
+        const result = await sendEmailNotification(testTicket);
+        
+        res.status(200).json({
+          success: result.success,
+          message: result.success ? 'Test email sent successfully' : 'Failed to send test email',
+          error: result.error || null,
+          messageId: result.messageId || null
+        });
+      } catch (error) {
+        console.error('Error sending test email:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Error sending test email',
+          error: error.message
+        });
+      }
+      return;
+    }
+    
     // Sales health check endpoint
     if (path === '/api/sales/health' && req.method === 'GET') {
       // Set CORS headers

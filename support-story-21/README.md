@@ -88,6 +88,14 @@ To properly deploy this application to Vercel, you need to set up the following 
 SUPABASE_URL=https://bnrnuddotoemwsgvlgbj.supabase.co
 SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJucm51ZGRvdG9lbXdzZ3ZsZ2JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MjU0MDYsImV4cCI6MjA3MzEwMTQwNn0.bSqfeOf8LkV-4EfJxHjPiScvHy_pMpqmVAQ8vT4UuIQ
 FRONTEND_URL=https://ticket-pos.vercel.app
+
+# Email Configuration (Rediff Business SMTP)
+SMTP_HOST=smtp.rediffmailpro.com
+SMTP_PORT=587
+SMTP_USER=your-email@rediffmailpro.com
+SMTP_PASS=your-password
+FROM_EMAIL=your-email@rediffmailpro.com
+SMTP_SECURE=false
 ```
 
 #### Frontend Environment Variables
@@ -100,11 +108,32 @@ VITE_API_BASE_URL=
 
 Note: For Vercel deployments, `VITE_API_BASE_URL` should be empty so that the frontend makes requests to the same domain.
 
+### Email Configuration
+
+The ticket system supports email notifications when tickets are closed. To enable this feature:
+
+1. Configure the SMTP settings in your environment variables as shown above
+2. The system supports both Rediff Business SMTP and Gmail SMTP
+3. For Gmail, you can alternatively use:
+   ```
+   EMAIL_SERVICE=gmail
+   EMAIL_USER=your-gmail-address@gmail.com
+   EMAIL_PASS=your-gmail-app-password
+   FROM_EMAIL=your-gmail-address@gmail.com
+   ```
+
 ### Deployment Steps
 
 1. After setting up the environment variables, redeploy your application
 2. Vercel will automatically pick up the environment variables during the build process
-3. The application should now be able to connect to the Supabase database
+3. The application should now be able to connect to the Supabase database and send email notifications
+
+### Testing Email Functionality
+
+You can test the email configuration by:
+
+1. Visiting the email config test endpoint: `/api/test-email-config`
+2. Using the email send test endpoint: `/api/test-email-send` (POST request with JSON body containing `toEmail`, `subject`, and `message`)
 
 ### Troubleshooting
 
@@ -122,6 +151,8 @@ You can test the API endpoints directly by visiting:
 - `https://ticket-pos.vercel.app/api/health` - General API health check
 - `https://ticket-pos.vercel.app/api/sales/health` - Sales API health check
 - `https://ticket-pos.vercel.app/api/test` - Basic connectivity test
+- `https://ticket-pos.vercel.app/api/test-email-config` - Email configuration test
+- `https://ticket-pos.vercel.app/api/test-email-send` - Email sending test (POST request)
 
 ## Can I connect a custom domain to my Lovable project?
 

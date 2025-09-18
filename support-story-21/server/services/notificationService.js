@@ -52,17 +52,9 @@ const createEmailTransporter = () => {
     });
   }
   
-  // Final fallback
-  console.log('Using fallback configuration');
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.ethereal.email',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true' || false,
-    auth: {
-      user: process.env.SMTP_USER || process.env.EMAIL_USER || 'your-email@example.com',
-      pass: process.env.SMTP_PASS || process.env.EMAIL_PASS || 'your-password'
-    }
-  });
+  // Final fallback - log error and return null
+  console.error('No valid email configuration found. Please check your environment variables.');
+  return null;
 };
 
 // Send email notification
@@ -70,7 +62,29 @@ const sendEmailNotification = async (ticket) => {
   try {
     console.log('Attempting to send email notification for ticket:', ticket.ticketNumber);
     console.log('Ticket data:', ticket);
+    
     const transporter = createEmailTransporter();
+    
+    // Check if transporter was created successfully
+    if (!transporter) {
+      console.error('Failed to create email transporter');
+      return { success: false, error: 'Email configuration is missing or invalid' };
+    }
+    
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+      console.log('SMTP transporter verified successfully');
+    } catch (verifyError) {
+      console.error('SMTP transporter verification failed:', verifyError);
+      return { success: false, error: `SMTP verification failed: ${verifyError.message}` };
+    }
+    
+    // Validate required fields
+    if (!ticket.email) {
+      console.error('No email address provided for ticket:', ticket.ticketNumber);
+      return { success: false, error: 'No email address provided for the ticket' };
+    }
     
     // Email content
     const mailOptions = {
@@ -80,17 +94,17 @@ const sendEmailNotification = async (ticket) => {
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Ticket Resolved</h2>
-          <p>Dear ${ticket.contactPerson},</p>
+          <p>Dear ${ticket.contactPerson || 'Customer'},</p>
           
           <p>We're pleased to inform you that your support ticket has been resolved:</p>
           
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3>Ticket Details:</h3>
-            <p><strong>Ticket Number:</strong> ${ticket.ticketNumber}</p>
-            <p><strong>Issue Type:</strong> ${ticket.issueRelated}</p>
-            <p><strong>Priority:</strong> ${ticket.priority}</p>
-            <p><strong>Created At:</strong> ${new Date(ticket.createdAt).toLocaleString()}</p>
-            <p><strong>Closed At:</strong> ${new Date(ticket.closedAt).toLocaleString()}</p>
+            <p><strong>Ticket Number:</strong> ${ticket.ticketNumber || 'N/A'}</p>
+            <p><strong>Issue Type:</strong> ${ticket.issueRelated || 'N/A'}</p>
+            <p><strong>Priority:</strong> ${ticket.priority || 'N/A'}</p>
+            <p><strong>Created At:</strong> ${ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'N/A'}</p>
+            <p><strong>Closed At:</strong> ${ticket.closedAt ? new Date(ticket.closedAt).toLocaleString() : 'N/A'}</p>
           </div>
           
           <div style="background-color: #e8f4fd; padding: 15px; border-radius: 5px; margin: 20px 0;">

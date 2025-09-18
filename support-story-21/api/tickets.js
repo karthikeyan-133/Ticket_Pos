@@ -267,8 +267,16 @@ const ticketRoutes = async (req, res) => {
               closedAt: data[0].closed_at
             };
             
-            await sendTicketClosedNotifications(ticketData);
-            console.log(`Notification sent for ticket ${data[0].ticket_number}`);
+            // Send notifications and log the result
+            const notificationResult = await sendTicketClosedNotifications(ticketData);
+            console.log(`Notification sent for ticket ${data[0].ticket_number}`, notificationResult);
+            
+            // Check if email was sent successfully
+            if (notificationResult.email && !notificationResult.email.success) {
+              console.error(`Failed to send email for ticket ${data[0].ticket_number}:`, notificationResult.email.error);
+            } else if (notificationResult.email && notificationResult.email.success) {
+              console.log(`Email successfully sent for ticket ${data[0].ticket_number}`);
+            }
           } catch (notificationError) {
             console.error(`Error sending notification for ticket ${data[0].ticket_number}:`, notificationError);
           }
