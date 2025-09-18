@@ -138,9 +138,25 @@ const handler = async (req, res) => {
       
       res.status(200).json({ 
         message: 'Server is running!',
-        supabaseInitialized: !!supabase,
-        supabaseUrl: process.env.SUPABASE_URL ? 'SET' : 'NOT SET',
-        supabaseKey: process.env.SUPABASE_KEY ? 'SET' : 'NOT SET'
+        timestamp: new Date().toISOString(),
+        supabaseInitialized: !!supabase
+      });
+      return;
+    }
+    
+    // Email config test endpoint
+    if (path === '/api/test-email-config' && req.method === 'GET') {
+      // Set CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      res.status(200).json({
+        EMAIL_SERVICE: process.env.EMAIL_SERVICE,
+        SMTP_HOST: process.env.SMTP_HOST,
+        SMTP_PORT: process.env.SMTP_PORT,
+        hasSMTPUser: !!process.env.SMTP_USER,
+        hasSMTPPass: !!process.env.SMTP_PASS,
+        FROM_EMAIL: process.env.FROM_EMAIL,
+        message: 'Email configuration loaded successfully'
       });
       return;
     }
