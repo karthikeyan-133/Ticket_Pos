@@ -65,15 +65,10 @@ const EditTicket = () => {
                   // Ensure we have a contact person and ticket number
                   const contactPerson = updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer';
                   const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
+                  const resolution = updatedTicket.resolution || 'No resolution details provided.';
                   
-                  // Create a more detailed and properly formatted message
-                  const message = `Hello ${contactPerson},
-
-Your support ticket ${ticketNumber} has been resolved.
-
-Thank you for your patience!
-
-Techzon Support Team`;
+                  // Create the exact message format you want
+                  const message = `Hello ${contactPerson}, Your support ticket ${ticketNumber} has been resolved. Resolution Details: ${resolution} Thank you for your patience! Techzon Support Team`;
                   
                   // Ensure mobile number exists and is properly formatted
                   let mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
