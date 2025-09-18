@@ -233,8 +233,22 @@ const ticketRoutes = async (req, res) => {
         if (isClosing && data && data[0]) {
           console.log(`Ticket ${data[0].ticket_number} has been closed, sending notification...`);
           try {
-            // Import notification service
-            const { sendTicketClosedNotifications } = await import('../server/services/notificationService.js');
+            // Import notification service with error handling
+            let sendTicketClosedNotifications;
+            try {
+              const notificationService = await import('../server/services/notificationService.js');
+              sendTicketClosedNotifications = notificationService.sendTicketClosedNotifications;
+            } catch (importError) {
+              console.error('Error importing notification service:', importError);
+              // Try alternative import path
+              try {
+                const notificationService = await import('./server/services/notificationService.js');
+                sendTicketClosedNotifications = notificationService.sendTicketClosedNotifications;
+              } catch (altImportError) {
+                console.error('Alternative import also failed:', altImportError);
+                throw new Error('Failed to import notification service');
+              }
+            }
             
             // Convert snake_case to camelCase for notification service
             const ticketData = {

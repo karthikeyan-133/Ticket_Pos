@@ -11,7 +11,8 @@ const createEmailTransporter = () => {
     SMTP_HOST: process.env.SMTP_HOST,
     SMTP_PORT: process.env.SMTP_PORT,
     hasSMTPUser: !!process.env.SMTP_USER,
-    hasSMTPPass: !!process.env.SMTP_PASS
+    hasSMTPPass: !!process.env.SMTP_PASS,
+    FROM_EMAIL: process.env.FROM_EMAIL
   });
   
   // Check if we have SMTP configuration (for Rediff Business and others)
@@ -35,11 +36,13 @@ const createEmailTransporter = () => {
       };
     }
     
+    console.log('Using SMTP configuration:', config);
     return nodemailer.createTransport(config);
   }
   
   // Fallback to Gmail configuration
   if (process.env.EMAIL_SERVICE === 'gmail' && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    console.log('Using Gmail configuration');
     return nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -50,6 +53,7 @@ const createEmailTransporter = () => {
   }
   
   // Final fallback
+  console.log('Using fallback configuration');
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.ethereal.email',
     port: parseInt(process.env.SMTP_PORT) || 587,
@@ -65,6 +69,7 @@ const createEmailTransporter = () => {
 const sendEmailNotification = async (ticket) => {
   try {
     console.log('Attempting to send email notification for ticket:', ticket.ticketNumber);
+    console.log('Ticket data:', ticket);
     const transporter = createEmailTransporter();
     
     // Email content
@@ -118,6 +123,10 @@ const sendEmailNotification = async (ticket) => {
     return { success: true, messageId: info.messageId };
   } catch (error) {
     console.error('Error sending email notification:', error);
+    // Log additional error details
+    if (error.code) console.error('Error code:', error.code);
+    if (error.command) console.error('Error command:', error.command);
+    if (error.response) console.error('Error response:', error.response);
     return { success: false, error: error.message };
   }
 };
