@@ -256,6 +256,7 @@ const ticketRoutes = async (req, res) => {
               assignedExecutive: data[0].assigned_executive,
               userType: data[0].user_type,
               expiryDate: data[0].expiry_date,
+              resolution: data[0].resolution,
               createdAt: data[0].created_at,
               updatedAt: data[0].updated_at,
               closedAt: data[0].closed_at
@@ -270,6 +271,13 @@ const ticketRoutes = async (req, res) => {
               console.error(`Failed to send email for ticket ${data[0].ticket_number}:`, notificationResult.email.error);
             } else if (notificationResult.email && notificationResult.email.success) {
               console.log(`Email successfully sent for ticket ${data[0].ticket_number}`);
+            }
+            
+            // Log WhatsApp URL generation result
+            if (notificationResult.whatsapp && !notificationResult.whatsapp.success) {
+              console.error(`Failed to generate WhatsApp URL for ticket ${data[0].ticket_number}:`, notificationResult.whatsapp.error);
+            } else if (notificationResult.whatsapp && notificationResult.whatsapp.success) {
+              console.log(`WhatsApp URL successfully generated for ticket ${data[0].ticket_number}:`, notificationResult.whatsapp.url);
             }
           } catch (notificationError) {
             console.error(`Error sending notification for ticket ${data[0].ticket_number}:`, notificationError);

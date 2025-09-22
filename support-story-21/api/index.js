@@ -218,6 +218,47 @@ const handler = async (req, res) => {
       return;
     }
     
+    // Test WhatsApp URL generation endpoint
+    if (path === '/api/test-whatsapp-url' && req.method === 'POST') {
+      // Set CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      try {
+        // Import notification service
+        const notificationService = await import('../server/services/notificationService.js');
+        const generateWhatsAppMessageUrl = notificationService.generateWhatsAppMessageUrl;
+        
+        // Get test data from request body
+        const { mobileNumber, contactPerson, ticketNumber, resolution } = req.body || {};
+        
+        // Create a test ticket object
+        const testTicket = {
+          ticketNumber: ticketNumber || 'TEST-001',
+          contactPerson: contactPerson || 'Test User',
+          mobileNumber: mobileNumber || '+971501234567',
+          resolution: resolution || 'This is a test resolution from the ticket system.'
+        };
+        
+        // Generate WhatsApp URL
+        const result = generateWhatsAppMessageUrl(testTicket);
+        
+        res.status(200).json({
+          success: result.success,
+          message: result.success ? 'WhatsApp URL generated successfully' : 'Failed to generate WhatsApp URL',
+          url: result.url || null,
+          error: result.error || null
+        });
+      } catch (error) {
+        console.error('Error generating WhatsApp URL:', error);
+        res.status(500).json({
+          success: false,
+          message: 'Error generating WhatsApp URL',
+          error: error.message
+        });
+      }
+      return;
+    }
+    
     // Sales health check endpoint
     if (path === '/api/sales/health' && req.method === 'GET') {
       // Set CORS headers

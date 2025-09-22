@@ -1,11 +1,9 @@
 import nodemailer from 'nodemailer';
 
 // Load environment variables with error handling
-let dotenvLoaded = false;
 try {
   const dotenv = await import('dotenv');
   dotenv.config();
-  dotenvLoaded = true;
   console.log('Dotenv loaded successfully');
 } catch (error) {
   console.warn('Dotenv not available, using process.env directly:', error.message);
@@ -192,7 +190,48 @@ const sendEmailNotification = async (ticket) => {
   }
 };
 
-// Send ticket closed notifications (email only, no Twilio)
+// Generate WhatsApp message URL (for client-side redirect)
+const generateWhatsAppMessageUrl = (ticket) => {
+  try {
+    // Validate required fields
+    if (!ticket.mobileNumber) {
+      console.error('No mobile number provided for ticket:', ticket.ticketNumber);
+      return { success: false, error: 'No mobile number provided for the ticket' };
+    }
+    
+    // Clean and format the mobile number
+    let cleanNumber = '';
+    try {
+      cleanNumber = ticket.mobileNumber.replace(/\D/g, '');
+    } catch (error) {
+      console.error('Error cleaning mobile number:', error);
+      return { success: false, error: 'Invalid mobile number format' };
+    }
+    
+    if (!cleanNumber || cleanNumber.trim() === '') {
+      return { success: false, error: 'Invalid mobile number format' };
+    }
+    
+    // Add country code if not present (assuming UAE/India format)
+    const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
+    
+    // Create the WhatsApp message
+    const resolutionText = ticket.resolution || 'No resolution details provided.';
+    const message = `Hello ${ticket.contactPerson || 'Customer'}, Your support ticket ${ticket.ticketNumber || 'N/A'} has been resolved. Resolution Details: ${resolutionText} Thank you for your patience! Techzon Support Team`;
+    
+    // Properly encode the message for URL
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    
+    console.log('Generated WhatsApp URL:', whatsappUrl);
+    return { success: true, url: whatsappUrl };
+  } catch (error) {
+    console.error('Error generating WhatsApp message URL:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send ticket closed notifications (email and WhatsApp URL generation)
 const sendTicketClosedNotifications = async (ticket) => {
   console.log(`Sending notifications for closed ticket ${ticket.ticketNumber}`);
   
@@ -200,17 +239,24 @@ const sendTicketClosedNotifications = async (ticket) => {
   const emailResult = await sendEmailNotification(ticket);
   console.log('Email result:', emailResult);
   
+  // Generate WhatsApp message URL (for client-side redirect)
+  const whatsappResult = generateWhatsAppMessageUrl(ticket);
+  console.log('WhatsApp result:', whatsappResult);
+  
   return {
-    email: emailResult
+    email: emailResult,
+    whatsapp: whatsappResult
   };
 };
 
 export {
   sendTicketClosedNotifications,
-  sendEmailNotification
+  sendEmailNotification,
+  generateWhatsAppMessageUrl
 };
 
 export default {
   sendTicketClosedNotifications,
-  sendEmailNotification
+  sendEmailNotification,
+  generateWhatsAppMessageUrl
 };

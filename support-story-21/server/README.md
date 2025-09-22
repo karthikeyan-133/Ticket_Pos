@@ -108,7 +108,7 @@ Example: 123456789
 
 When a ticket is closed, the system automatically sends:
 1. An email to the customer with the resolution details
-2. A WhatsApp message (if Twilio is configured)
+2. Generates a WhatsApp message URL that can be used for client-side redirection
 
 ## Database Schema
 
@@ -153,7 +153,7 @@ The backend is built with:
 - Express.js
 - MySQL with mysql2 package
 - Nodemailer for emails
-- Twilio for WhatsApp (optional)
+- WhatsApp URL generation for client-side redirection
 
 ## Testing
 
