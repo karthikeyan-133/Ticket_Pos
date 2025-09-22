@@ -226,28 +226,22 @@ const ticketRoutes = async (req, res) => {
           .update(updateData)
           .eq('id', ticketId)
           .select();
-          
+      
         if (error) throw error;
         
         // If ticket was closed, send notifications
         if (isClosing && data && data[0]) {
           console.log(`Ticket ${data[0].ticket_number} has been closed, sending notification...`);
           try {
-            // Import notification service with error handling
+            // Import notification service with correct relative path for Vercel
             let sendTicketClosedNotifications;
             try {
+              // Use the correct relative path for Vercel deployment
               const notificationService = await import('../server/services/notificationService.js');
               sendTicketClosedNotifications = notificationService.sendTicketClosedNotifications;
             } catch (importError) {
               console.error('Error importing notification service:', importError);
-              // Try alternative import path
-              try {
-                const notificationService = await import('./server/services/notificationService.js');
-                sendTicketClosedNotifications = notificationService.sendTicketClosedNotifications;
-              } catch (altImportError) {
-                console.error('Alternative import also failed:', altImportError);
-                throw new Error('Failed to import notification service');
-              }
+              throw new Error('Failed to import notification service: ' + importError.message);
             }
             
             // Convert snake_case to camelCase for notification service
