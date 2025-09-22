@@ -86,6 +86,18 @@ const handler = async (req, res) => {
     headers: {
       origin: req.headers.origin,
       'user-agent': req.headers['user-agent']
+    },
+    // Log environment variables for debugging
+    env: {
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      EMAIL_SERVICE: process.env.EMAIL_SERVICE,
+      SMTP_HOST: process.env.SMTP_HOST,
+      hasSMTPUser: !!process.env.SMTP_USER,
+      hasSMTPPass: !!process.env.SMTP_PASS,
+      FROM_EMAIL: process.env.FROM_EMAIL,
+      VERCEL_SMTP_HOST: process.env.VERCEL_SMTP_HOST,
+      hasVERCELSMTPUser: !!process.env.VERCEL_SMTP_USER,
+      hasVERCELSMTPPass: !!process.env.VERCEL_SMTP_PASS
     }
   });
   

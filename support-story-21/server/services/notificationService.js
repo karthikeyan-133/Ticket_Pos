@@ -6,16 +6,53 @@ dotenv.config();
 
 // Create email transporter
 const createEmailTransporter = () => {
-  console.log('Creating email transporter with config:', {
+  console.log('Creating email transporter. Environment check:', {
+    VERCEL_ENV: process.env.VERCEL_ENV,
     EMAIL_SERVICE: process.env.EMAIL_SERVICE,
     SMTP_HOST: process.env.SMTP_HOST,
     SMTP_PORT: process.env.SMTP_PORT,
     hasSMTPUser: !!process.env.SMTP_USER,
     hasSMTPPass: !!process.env.SMTP_PASS,
-    FROM_EMAIL: process.env.FROM_EMAIL
+    FROM_EMAIL: process.env.FROM_EMAIL,
+    VERCEL_SMTP_HOST: process.env.VERCEL_SMTP_HOST,
+    hasVERCELSMTPUser: !!process.env.VERCEL_SMTP_USER,
+    hasVERCELSMTPPass: !!process.env.VERCEL_SMTP_PASS
   });
   
-  // Check if we have SMTP configuration (for Rediff Business and others)
+  // Check for Vercel-specific environment variables first (when deployed on Vercel)
+  if (process.env.VERCEL_ENV) {
+    console.log('Running on Vercel, checking Vercel-specific SMTP configuration');
+    
+    // Check if we have Vercel SMTP configuration
+    if (process.env.VERCEL_SMTP_HOST && process.env.VERCEL_SMTP_USER && process.env.VERCEL_SMTP_PASS) {
+      const config = {
+        host: process.env.VERCEL_SMTP_HOST,
+        port: parseInt(process.env.VERCEL_SMTP_PORT) || parseInt(process.env.SMTP_PORT) || 587,
+        secure: process.env.VERCEL_SMTP_SECURE === 'true' || process.env.SMTP_SECURE === 'true' || false,
+        auth: {
+          user: process.env.VERCEL_SMTP_USER,
+          pass: process.env.VERCEL_SMTP_PASS
+        },
+        // Add name property to fix HeloHost issue
+        name: 'localhost'
+      };
+      
+      // Add additional configuration for Rediff Business
+      if (process.env.VERCEL_SMTP_HOST.includes('rediff')) {
+        config.tls = {
+          rejectUnauthorized: false
+        };
+      }
+      
+      console.log('Using Vercel SMTP configuration:', config);
+      return nodemailer.createTransport(config);
+    }
+    
+    // If no Vercel-specific config, fall back to standard config
+    console.log('No Vercel-specific SMTP config found, checking standard config');
+  }
+  
+  // Check if we have standard SMTP configuration (for Rediff Business and others)
   if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     const config = {
       host: process.env.SMTP_HOST,
@@ -36,7 +73,7 @@ const createEmailTransporter = () => {
       };
     }
     
-    console.log('Using SMTP configuration:', config);
+    console.log('Using standard SMTP configuration:', config);
     return nodemailer.createTransport(config);
   }
   
@@ -54,6 +91,9 @@ const createEmailTransporter = () => {
   
   // Final fallback - log error and return null
   console.error('No valid email configuration found. Please check your environment variables.');
+  console.error('Required variables for SMTP: SMTP_HOST, SMTP_USER, SMTP_PASS');
+  console.error('Required variables for Gmail: EMAIL_SERVICE=gmail, EMAIL_USER, EMAIL_PASS');
+  console.error('Required variables for Vercel SMTP: VERCEL_SMTP_HOST, VERCEL_SMTP_USER, VERCEL_SMTP_PASS');
   return null;
 };
 
@@ -68,7 +108,7 @@ const sendEmailNotification = async (ticket) => {
     // Check if transporter was created successfully
     if (!transporter) {
       console.error('Failed to create email transporter');
-      return { success: false, error: 'Email configuration is missing or invalid' };
+      return { success: false, error: 'Email configuration is missing or invalid. Please check environment variables.' };
     }
     
     // Verify transporter configuration
@@ -88,7 +128,7 @@ const sendEmailNotification = async (ticket) => {
     
     // Email content
     const mailOptions = {
-      from: process.env.FROM_EMAIL || process.env.EMAIL_USER || 'support@techzontech.com',
+      from: process.env.FROM_EMAIL || process.env.EMAIL_USER || process.env.VERCEL_SMTP_USER || 'support@techzontech.com',
       to: ticket.email,
       subject: `Your Support Ticket ${ticket.ticketNumber} Has Been Resolved`,
       html: `
