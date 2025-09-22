@@ -1,69 +1,64 @@
-# Vercel Deployment Fix for Timeout Issues
+# Vercel Deployment Fix
 
 ## Problem
-The application is experiencing timeout errors when fetching sales data:
+The application was failing to deploy to Vercel with the following error:
 ```
-Error fetching sales: Error: Request timeout: The server took too long to respond
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'dotenv' imported from /var/task/support-story-21/server/services/notificationService.js
 ```
 
-## Root Causes
-1. Missing Supabase environment variables in Vercel deployment
-2. Inconsistent API implementation between sales and other services
+## Root Cause
+The issue was that Vercel was only installing dependencies from the root `package.json` file, but the `dotenv` package (and other server dependencies) were only listed in the `server/package.json` file.
 
 ## Solution Implemented
-1. Refactored sales API to use axios (like ticket API) for better timeout handling
-2. Removed custom timeout logic from backend routes
-3. Improved error handling and logging
 
-## Required Environment Variables
+### 1. Moved Server Dependencies to Root package.json
+All server dependencies including `dotenv`, `nodemailer`, `mysql2`, `twilio`, and `serverless-http` were moved to the root `package.json` file to ensure they are available in the Vercel deployment environment.
 
-You MUST add these environment variables to your Vercel project:
-
-### Backend Environment Variables
-Go to your Vercel project dashboard → Settings → Environment Variables and add:
-
-```
-SUPABASE_URL=https://bnrnuddotoemwsgvlgbj.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJucm51ZGRvdG9lbXdzZ3ZsZ2JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MjU0MDYsImV4cCI6MjA3MzEwMTQwNn0.bSqfeOf8LkV-4EfJxHjPiScvHy_pMpqmVAQ8vT4UuIQ
-FRONTEND_URL=https://ticket-pos.vercel.app
+### 2. Updated vercel.json Install Command
+The `installCommand` in `vercel.json` was updated to also install dependencies from the server directory:
+```json
+"installCommand": "npm install && cd server && npm install"
 ```
 
-### Frontend Environment Variables
-For the frontend, make sure you have the following in your `.env` file:
-
+### 3. Enhanced Error Handling in Notification Service
+The notification service was updated with error handling for the dotenv import to gracefully handle cases where the package might not be available:
+```javascript
+// Load environment variables with error handling
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+  console.log('Dotenv loaded successfully');
+} catch (error) {
+  console.warn('Dotenv not available, using process.env directly:', error.message);
+}
 ```
-VITE_API_BASE_URL=
-```
 
-Note: For Vercel deployments, `VITE_API_BASE_URL` should be empty so that the frontend makes requests to the same domain.
+## Required Environment Variables in Vercel Dashboard
 
-## Deployment Steps
+For the email notification system to work properly in Vercel, you need to set the following environment variables in your Vercel project dashboard:
 
-1. Add the environment variables to your Vercel project as described above
-2. Redeploy your application from the Vercel dashboard
-3. Vercel will automatically pick up the environment variables during the build process
-4. The application should now be able to connect to the Supabase database
+1. `VERCEL_SMTP_HOST` - Your SMTP host (e.g., smtp.rediffmailpro.com)
+2. `VERCEL_SMTP_PORT` - Your SMTP port (e.g., 587)
+3. `VERCEL_SMTP_USER` - Your SMTP username (email address)
+4. `VERCEL_SMTP_PASS` - Your SMTP password
+5. `FROM_EMAIL` - The email address to send from
 
-## Testing
+## Testing the Fix
 
-After deployment, you can test the API endpoints directly by visiting:
-- `https://ticket-pos.vercel.app/api/health` - General API health check
-- `https://ticket-pos.vercel.app/api/sales/health` - Sales API health check
-- `https://ticket-pos.vercel.app/api/test` - Basic connectivity test
+To test that the fix works, you can:
 
-## Troubleshooting
+1. Deploy to Vercel
+2. Use the test endpoint: `POST /api/test-email-send` with a JSON body containing:
+   ```json
+   {
+     "toEmail": "test@example.com",
+     "subject": "Test Email",
+     "message": "This is a test email"
+   }
+   ```
 
-If you still encounter issues:
+## Additional Notes
 
-1. Check that all environment variables are correctly set in Vercel
-2. Verify that the Supabase credentials are correct
-3. Check the deployment logs for any error messages
-4. Make sure there are no typos in the environment variable names
-5. Test the API endpoints directly using the diagnostic URLs above
-
-The timeout error was occurring because:
-- The application was trying to connect to a database that wasn't properly configured
-- The custom timeout implementation in the sales API was not working correctly
-- The inconsistent API implementation between services was causing reliability issues
-
-With these fixes, the timeout issues should be resolved.
+- The application should now successfully deploy to Vercel without the dotenv import error
+- Email notifications should work correctly when tickets are closed
+- All server dependencies are now available in the Vercel environment

@@ -1,8 +1,15 @@
 import nodemailer from 'nodemailer';
 
-// Load environment variables
-import dotenv from 'dotenv';
-dotenv.config();
+// Load environment variables with error handling
+let dotenvLoaded = false;
+try {
+  const dotenv = await import('dotenv');
+  dotenv.config();
+  dotenvLoaded = true;
+  console.log('Dotenv loaded successfully');
+} catch (error) {
+  console.warn('Dotenv not available, using process.env directly:', error.message);
+}
 
 // Create email transporter
 const createEmailTransporter = () => {
