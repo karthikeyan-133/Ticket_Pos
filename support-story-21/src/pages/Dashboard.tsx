@@ -201,14 +201,14 @@ const Dashboard = () => {
                       {getPriorityBadge(ticket.priority)}
                     </div>
                     <div>
-                      <p className="font-medium text-foreground">{ticket.ticket_number}</p>
-                      <p className="text-sm text-muted-foreground">{ticket.remarks || "No description"}</p>
+                      <p className="font-medium text-foreground">{ticket.ticket_number || ticket.ticketNumber || `TICKET-${ticket.id}`}</p>
+                      <p className="text-sm text-muted-foreground">{ticket.remarks || ticket.remarks || "No description"}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-medium text-foreground">{ticket.company_name}</p>
+                    <p className="text-sm font-medium text-foreground">{ticket.company_name || ticket.companyName || 'N/A'}</p>
                     <p className="text-xs text-muted-foreground">
-                      {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString() : 'N/A'}
+                      {ticket.created_at || ticket.createdAt ? new Date(ticket.created_at || ticket.createdAt).toLocaleDateString() : 'N/A'}
                     </p>
                   </div>
                 </div>

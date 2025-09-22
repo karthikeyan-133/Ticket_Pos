@@ -279,16 +279,16 @@ const Tickets = () => {
                           to={`/tickets/${ticket.id}`}
                           className="text-primary hover:underline"
                         >
-                          {ticket.ticket_number || `TICKET-${ticket.id}`}
+                          {ticket.ticket_number || ticket.ticketNumber || `TICKET-${ticket.id}`}
                         </NavLink>
                       </TableCell>
-                      <TableCell>{ticket.serial_number || 'N/A'}</TableCell>
-                      <TableCell className="text-foreground">{ticket.company_name || 'N/A'}</TableCell>
-                      <TableCell className="text-foreground">{ticket.contact_person || 'N/A'}</TableCell>
+                      <TableCell>{ticket.serial_number || ticket.serialNumber || 'N/A'}</TableCell>
+                      <TableCell className="text-foreground">{ticket.company_name || ticket.companyName || 'N/A'}</TableCell>
+                      <TableCell className="text-foreground">{ticket.contact_person || ticket.contactPerson || 'N/A'}</TableCell>
                       <TableCell>{getIssueTypeLabel(ticket.issue_related || ticket.issueRelated || 'N/A')}</TableCell>
                       <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                       <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                      <TableCell className="text-foreground">{ticket.assigned_executive || 'Unassigned'}</TableCell>
+                      <TableCell className="text-foreground">{ticket.assigned_executive || ticket.assignedExecutive || 'Unassigned'}</TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatToDubaiTime(ticket.created_at || ticket.createdAt)}
                       </TableCell>
