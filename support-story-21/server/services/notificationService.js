@@ -152,7 +152,10 @@ const sendEmailNotification = async (ticket) => {
             <p><strong>Closed At:</strong> ${ticket.closedAt ? new Date(ticket.closedAt).toLocaleString() : 'N/A'}</p>
           </div>
           
-       
+          <div style="background-color: #e8f4fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <h3>Resolution:</h3>
+            <p>${ticket.resolution || 'No resolution details provided.'}</p>
+          </div>
           
           <p>Thank you for your patience. If you have any further questions or concerns, please don't hesitate to contact us.</p>
           

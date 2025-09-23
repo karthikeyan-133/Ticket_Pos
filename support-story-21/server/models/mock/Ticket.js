@@ -158,6 +158,11 @@ class Ticket {
     return result;
   }
 
+  // Find all tickets (alias for compatibility with Supabase model)
+  static async findAll() {
+    return await Ticket.find();
+  }
+
   // Find ticket by ID (mock implementation)
   static async findById(id) {
     return tickets.find(ticket => ticket.id === id) || null;

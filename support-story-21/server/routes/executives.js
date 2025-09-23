@@ -25,22 +25,20 @@ router.get('/', async (req, res) => {
     // For Supabase implementation, we need to handle filtering differently
     const { department, isActive } = req.query;
     
-    // Get all executives first
-    const allExecutives = await Executive.findAll();
-    
-    // Apply filters manually
-    let filteredExecutives = allExecutives;
-    
-    if (department) {
-      filteredExecutives = filteredExecutives.filter(exec => exec.department === department);
+    // Check if we're using the Supabase model (has findAll) or mock model (has find)
+    let allExecutives;
+    if (typeof Executive.findAll === 'function') {
+      // Supabase model
+      allExecutives = await Executive.findAll();
+    } else {
+      // Mock model
+      const filter = {};
+      if (department) filter.department = department;
+      if (isActive !== undefined) filter.isActive = isActive === 'true' || isActive === true || isActive === 1;
+      allExecutives = await Executive.find(filter);
     }
     
-    if (isActive !== undefined) {
-      const isActiveBool = isActive === 'true' || isActive === true || isActive === 1;
-      filteredExecutives = filteredExecutives.filter(exec => exec.isActive === isActiveBool);
-    }
-    
-    res.json(filteredExecutives);
+    res.json(allExecutives);
   } catch (error) {
     console.error('Error fetching executives:', error);
     res.status(500).json({ message: error.message });

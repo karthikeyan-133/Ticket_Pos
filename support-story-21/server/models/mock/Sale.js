@@ -95,6 +95,11 @@ class Sale {
     return result;
   }
 
+  // Find all sales (alias for compatibility with Supabase model)
+  static async findAll() {
+    return await Sale.find();
+  }
+
   // Find sale by ID (mock implementation)
   static async findById(id) {
     return sales.find(sale => sale.id === id) || null;

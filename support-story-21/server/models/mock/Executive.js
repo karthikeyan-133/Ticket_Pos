@@ -79,6 +79,11 @@ class Executive {
     return result;
   }
 
+  // Find all executives (alias for compatibility with Supabase model)
+  static async findAll() {
+    return await Executive.find();
+  }
+
   // Find executive by ID (mock implementation)
   static async findById(id) {
     return executives.find(exec => exec.id === id) || null;
