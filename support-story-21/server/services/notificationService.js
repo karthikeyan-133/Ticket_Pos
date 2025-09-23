@@ -102,7 +102,7 @@ const createEmailTransporter = () => {
   return null;
 };
 
-// Send email notification
+// Send email notification with enhanced error handling
 const sendEmailNotification = async (ticket) => {
   try {
     console.log('Attempting to send email notification for ticket:', ticket.ticketNumber);
@@ -116,9 +116,15 @@ const sendEmailNotification = async (ticket) => {
       return { success: false, error: 'Email configuration is missing or invalid. Please check environment variables.' };
     }
     
-    // Verify transporter configuration
+    // Verify transporter configuration with timeout
     try {
-      await transporter.verify();
+      // Add timeout to verification
+      const verifyPromise = transporter.verify();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('SMTP verification timeout')), 10000)
+      );
+      
+      await Promise.race([verifyPromise, timeoutPromise]);
       console.log('SMTP transporter verified successfully');
     } catch (verifyError) {
       console.error('SMTP transporter verification failed:', verifyError);
@@ -176,8 +182,13 @@ const sendEmailNotification = async (ticket) => {
       subject: mailOptions.subject
     });
 
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
+    // Send email with timeout
+    const sendPromise = transporter.sendMail(mailOptions);
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Email sending timeout')), 15000)
+    );
+    
+    const info = await Promise.race([sendPromise, timeoutPromise]);
     console.log('Email notification sent:', info.messageId);
     return { success: true, messageId: info.messageId };
   } catch (error) {
@@ -234,6 +245,16 @@ const generateWhatsAppMessageUrl = (ticket) => {
 // Send ticket closed notifications (email and WhatsApp URL generation)
 const sendTicketClosedNotifications = async (ticket) => {
   console.log(`Sending notifications for closed ticket ${ticket.ticketNumber}`);
+  console.log('Full ticket data:', JSON.stringify(ticket, null, 2));
+  
+  // Validate ticket data
+  if (!ticket) {
+    console.error('No ticket data provided for notifications');
+    return {
+      email: { success: false, error: 'No ticket data provided' },
+      whatsapp: { success: false, error: 'No ticket data provided' }
+    };
+  }
   
   // Send email notification
   const emailResult = await sendEmailNotification(ticket);

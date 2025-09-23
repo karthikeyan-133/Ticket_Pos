@@ -344,6 +344,8 @@ const ticketRoutes = async (req, res) => {
         // If ticket was closed, send notifications
         if (isClosing && data && data[0]) {
           console.log(`Ticket ${data[0].ticket_number} has been closed, sending notification...`);
+          console.log('Ticket data for notification:', JSON.stringify(data[0], null, 2));
+          
           try {
             // Import notification service with correct relative path for Vercel
             let sendTicketClosedNotifications;
@@ -353,6 +355,7 @@ const ticketRoutes = async (req, res) => {
               sendTicketClosedNotifications = notificationService.sendTicketClosedNotifications;
             } catch (importError) {
               console.error('Error importing notification service:', importError);
+              console.error('Import error stack:', importError.stack);
               throw new Error('Failed to import notification service: ' + importError.message);
             }
             
@@ -374,6 +377,8 @@ const ticketRoutes = async (req, res) => {
               closedAt: data[0].closed_at
             };
             
+            console.log('Converted ticket data for notification service:', JSON.stringify(ticketData, null, 2));
+            
             // Send notifications and log the result
             const notificationResult = await sendTicketClosedNotifications(ticketData);
             console.log(`Notification sent for ticket ${data[0].ticket_number}`, notificationResult);
@@ -393,6 +398,7 @@ const ticketRoutes = async (req, res) => {
             }
           } catch (notificationError) {
             console.error(`Error sending notification for ticket ${data[0].ticket_number}:`, notificationError);
+            console.error('Notification error stack:', notificationError.stack);
           }
         }
         

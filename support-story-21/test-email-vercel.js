@@ -1,35 +1,21 @@
-// Test script for email functionality on Vercel
-import dotenv from 'dotenv';
-dotenv.config();
-
-console.log('Environment variables check:');
-console.log('SMTP_HOST:', process.env.SMTP_HOST ? 'SET' : 'NOT SET');
-console.log('SMTP_USER:', process.env.SMTP_USER ? 'SET' : 'NOT SET');
-console.log('SMTP_PASS:', process.env.SMTP_PASS ? 'SET' : 'NOT SET');
-console.log('FROM_EMAIL:', process.env.FROM_EMAIL ? 'SET' : 'NOT SET');
-
-// Check if we're running on Vercel
-console.log('VERCEL_ENV:', process.env.VERCEL_ENV || 'NOT SET');
-console.log('NODE_ENV:', process.env.NODE_ENV || 'NOT SET');
-
+// Test script for Vercel email functionality
 import { sendEmailNotification } from './server/services/notificationService.js';
 
 // Test ticket data
 const testTicket = {
   ticketNumber: 'TEST-001',
-  contactPerson: 'Ashkan',
-  email: 'ashkan@example.com',
-  issueRelated: 'network',
+  contactPerson: 'Test User',
+  email: 'test@example.com',
+  issueRelated: 'Test Issue',
   priority: 'high',
+  resolution: 'This is a test resolution message to verify email functionality.',
   createdAt: new Date().toISOString(),
-  closedAt: new Date().toISOString(),
-  resolution: 'done network config'
+  closedAt: new Date().toISOString()
 };
 
-// Send test email
-const testEmail = async () => {
-  console.log('Testing email functionality...');
-  console.log('Test ticket data:', testTicket);
+// Test the email notification
+async function testEmail() {
+  console.log('Testing email notification...');
   
   try {
     const result = await sendEmailNotification(testTicket);
@@ -38,11 +24,12 @@ const testEmail = async () => {
     if (result.success) {
       console.log('✅ Email sent successfully!');
     } else {
-      console.log('❌ Failed to send email:', result.error);
+      console.log('❌ Email failed to send:', result.error);
     }
   } catch (error) {
     console.error('❌ Error during email test:', error);
   }
-};
+}
 
+// Run the test
 testEmail();
