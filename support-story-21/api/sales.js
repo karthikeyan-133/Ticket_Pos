@@ -8,12 +8,38 @@ const salesRoutes = async (req, res) => {
   const saleId = pathParts[0]; // First part after /api/sales/
 
   try {
-    // Get all sales
+    // Get all sales with filtering support
     if (method === 'GET' && path === '/') {
-      // If we have a Supabase client, use it
+      // Extract query parameters
+      const { search, statusOfEnquiry, assignedExecutive } = req.query || {};
+      
+      // If we have a Supabase client, use it with filtering
       if (req.supabase) {
-        console.log('Fetching all sales from Supabase');
-        const { data, error } = await req.supabase.from('sales').select('*');
+        console.log('Fetching sales from Supabase with filters:', { search, statusOfEnquiry, assignedExecutive });
+        let query = req.supabase.from('sales').select('*');
+        
+        // Apply filters
+        if (statusOfEnquiry && statusOfEnquiry !== 'all') {
+          query = query.eq('status_of_enquiry', statusOfEnquiry);
+        }
+        
+        if (assignedExecutive && assignedExecutive !== 'all') {
+          query = query.eq('assigned_executive', assignedExecutive);
+        }
+        
+        // Handle search parameter
+        if (search) {
+          const searchTerm = search.toLowerCase();
+          query = query.or(
+            `company_name.ilike.%${searchTerm}%,customer_name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,product_enquired.ilike.%${searchTerm}%`
+          );
+        }
+        
+        // Sort by creation date (newest first)
+        query = query.order('created_at', { ascending: false });
+        
+        // Remove the default limit of 1000 records
+        const { data, error } = await query.limit(10000); // Adjust this number based on your needs
         if (error) {
           console.error('Supabase query error:', error);
           throw error;
@@ -40,28 +66,66 @@ const salesRoutes = async (req, res) => {
         return res.json(convertedData);
       }
       
-      // Otherwise, return mock data
-      console.log('Returning mock sales data');
-      return res.json([
+      // Otherwise, return mock data with filtering
+      console.log('Returning mock sales data with filters:', { search, statusOfEnquiry, assignedExecutive });
+      const mockSales = [
         { 
           id: 1, 
-          company_name: 'Sample Company 1', 
-          companyName: 'Sample Company 1',
+          company_name: 'Tech Solutions Inc.',
+          companyName: 'Tech Solutions Inc.',
           customer_name: 'John Doe',
           customerName: 'John Doe',
+          email: 'john@example.com',
           status_of_enquiry: 'hot',
-          statusOfEnquiry: 'hot'
+          statusOfEnquiry: 'hot',
+          assigned_executive: 'Sarah Johnson',
+          assignedExecutive: 'Sarah Johnson',
+          product_enquired: 'Tally ERP 9',
+          productEnquired: 'Tally ERP 9',
+          created_at: '2023-01-15T10:30:00Z',
+          createdAt: '2023-01-15T10:30:00Z'
         },
         { 
           id: 2, 
-          company_name: 'Sample Company 2', 
-          companyName: 'Sample Company 2',
+          company_name: 'Global Systems Ltd.',
+          companyName: 'Global Systems Ltd.',
           customer_name: 'Jane Smith',
           customerName: 'Jane Smith',
+          email: 'jane@example.com',
           status_of_enquiry: 'cold',
-          statusOfEnquiry: 'cold'
+          statusOfEnquiry: 'cold',
+          assigned_executive: 'Mike Wilson',
+          assignedExecutive: 'Mike Wilson',
+          product_enquired: 'Tally Prime',
+          productEnquired: 'Tally Prime',
+          created_at: '2023-01-16T14:45:00Z',
+          createdAt: '2023-01-16T14:45:00Z'
         }
-      ]);
+      ];
+      
+      // Apply mock filtering
+      let filteredSales = [...mockSales];
+      
+      if (statusOfEnquiry && statusOfEnquiry !== 'all') {
+        filteredSales = filteredSales.filter(sale => sale.status_of_enquiry === statusOfEnquiry);
+      }
+      
+      if (assignedExecutive && assignedExecutive !== 'all') {
+        filteredSales = filteredSales.filter(sale => sale.assigned_executive === assignedExecutive);
+      }
+      
+      // Handle search parameter
+      if (search) {
+        const searchTerm = search.toLowerCase();
+        filteredSales = filteredSales.filter(sale => 
+          (sale.company_name && sale.company_name.toLowerCase().includes(searchTerm)) ||
+          (sale.customer_name && sale.customer_name.toLowerCase().includes(searchTerm)) ||
+          (sale.email && sale.email.toLowerCase().includes(searchTerm)) ||
+          (sale.product_enquired && sale.product_enquired.toLowerCase().includes(searchTerm))
+        );
+      }
+      
+      return res.json(filteredSales);
     }
     
     // Get sale by ID

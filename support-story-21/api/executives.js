@@ -90,11 +90,38 @@ const executiveRoutes = async (req, res) => {
   const executiveId = pathParts[0]; // Extract ID from path if present
 
   try {
-    // Get all executives
+    // Get all executives with filtering support
     if (method === 'GET' && path === '/') {
-      // If we have a Supabase client, use it
+      // Extract query parameters
+      const { department, isActive, search } = req.query || {};
+      
+      // If we have a Supabase client, use it with filtering
       if (req.supabase) {
-        const { data, error } = await req.supabase.from('executives').select('*');
+        let query = req.supabase.from('executives').select('*');
+        
+        // Apply filters
+        if (department && department !== 'all') {
+          query = query.eq('department', department);
+        }
+        
+        if (isActive !== undefined && isActive !== 'all') {
+          const isActiveBool = isActive === 'true' || isActive === true || isActive === 1;
+          query = query.eq('is_active', isActiveBool);
+        }
+        
+        // Handle search parameter
+        if (search) {
+          const searchTerm = search.toLowerCase();
+          query = query.or(
+            `name.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%,department.ilike.%${searchTerm}%`
+          );
+        }
+        
+        // Sort by name
+        query = query.order('name', { ascending: true });
+        
+        // Remove the default limit of 1000 records
+        const { data, error } = await query.limit(10000); // Adjust this number based on your needs
         if (error) throw error;
         
         // Ensure we always return an array
@@ -107,8 +134,34 @@ const executiveRoutes = async (req, res) => {
         return res.json(consistentData);
       }
       
-      // Otherwise, return mock data with consistent formatting
-      const consistentData = executives.map(formatExecutive);
+      // Otherwise, return mock data with filtering
+      let filteredExecutives = [...executives];
+      
+      // Apply filters
+      if (department && department !== 'all') {
+        filteredExecutives = filteredExecutives.filter(exec => exec.department === department);
+      }
+      
+      if (isActive !== undefined && isActive !== 'all') {
+        const isActiveBool = isActive === 'true' || isActive === true || isActive === 1;
+        filteredExecutives = filteredExecutives.filter(exec => exec.is_active === isActiveBool);
+      }
+      
+      // Handle search parameter
+      if (search) {
+        const searchTerm = search.toLowerCase();
+        filteredExecutives = filteredExecutives.filter(exec => 
+          (exec.name && exec.name.toLowerCase().includes(searchTerm)) ||
+          (exec.email && exec.email.toLowerCase().includes(searchTerm)) ||
+          (exec.department && exec.department.toLowerCase().includes(searchTerm))
+        );
+      }
+      
+      // Sort by name
+      filteredExecutives.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      
+      // Return consistent data format
+      const consistentData = filteredExecutives.map(formatExecutive);
       return res.json(consistentData);
     }
     

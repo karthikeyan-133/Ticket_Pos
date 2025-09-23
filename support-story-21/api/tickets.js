@@ -18,20 +18,105 @@ const ticketRoutes = async (req, res) => {
   const serialNumber = isSerialRoute ? pathParts[1] : null;
 
   try {
-    // Get all tickets
+    // Get all tickets with filtering support
     if (method === 'GET' && path === '/') {
-      // If we have a Supabase client, use it
+      // Extract query parameters
+      const { search, status, priority, company, serialNumber } = req.query || {};
+      
+      // If we have a Supabase client, use it with filtering
       if (req.supabase) {
-        const { data, error } = await req.supabase.from('tickets').select('*');
+        // Fetch all tickets without the default 1000 record limit
+        let query = req.supabase.from('tickets').select('*');
+        
+        // Apply filters
+        if (serialNumber) {
+          query = query.eq('serial_number', serialNumber);
+        }
+        
+        // Handle search parameter
+        if (search) {
+          const searchTerm = search.toLowerCase();
+          query = query.or(
+            `ticket_number.ilike.%${searchTerm}%,serial_number.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,contact_person.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`
+          );
+        }
+        
+        if (status && status !== 'all') {
+          query = query.eq('status', status);
+        }
+        
+        if (priority && priority !== 'all') {
+          query = query.eq('priority', priority);
+        }
+        
+        if (company && company !== 'all') {
+          query = query.eq('company_name', company);
+        }
+        
+        // Sort by creation date (newest first)
+        query = query.order('created_at', { ascending: false });
+        
+        // Remove the default limit of 1000 records by setting a large limit
+        const { data, error } = await query.limit(10000); // Adjust this number based on your needs
         if (error) throw error;
         return res.json(data);
       }
       
-      // Otherwise, return mock data
-      return res.json([
-        { id: 1, title: 'Sample Ticket 1', status: 'open' },
-        { id: 2, title: 'Sample Ticket 2', status: 'closed' }
-      ]);
+      // Otherwise, return mock data with filtering
+      const mockTickets = [
+        { 
+          id: 1, 
+          ticket_number: 'TICKET/2023/0001',
+          serial_number: '123456789',
+          company_name: 'Tech Solutions Inc.',
+          contact_person: 'John Doe',
+          email: 'john@example.com',
+          status: 'open',
+          priority: 'high',
+          issue_related: 'data',
+          created_at: '2023-01-15T10:30:00Z'
+        },
+        { 
+          id: 2, 
+          ticket_number: 'TICKET/2023/0002',
+          serial_number: '987654321',
+          company_name: 'Global Systems Ltd.',
+          contact_person: 'Jane Smith',
+          email: 'jane@example.com',
+          status: 'closed',
+          priority: 'medium',
+          issue_related: 'network',
+          created_at: '2023-01-16T14:45:00Z'
+        }
+      ];
+      
+      // Apply mock filtering
+      let filteredTickets = [...mockTickets];
+      
+      if (serialNumber) {
+        filteredTickets = filteredTickets.filter(ticket => ticket.serial_number === serialNumber);
+      }
+      
+      if (search) {
+        const searchTerm = search.toLowerCase();
+        filteredTickets = filteredTickets.filter(ticket => 
+          ticket.ticket_number.toLowerCase().includes(searchTerm) ||
+          ticket.serial_number.toLowerCase().includes(searchTerm) ||
+          ticket.company_name.toLowerCase().includes(searchTerm) ||
+          ticket.contact_person.toLowerCase().includes(searchTerm) ||
+          ticket.email.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      if (status && status !== 'all') {
+        filteredTickets = filteredTickets.filter(ticket => ticket.status === status);
+      }
+      
+      if (priority && priority !== 'all') {
+        filteredTickets = filteredTickets.filter(ticket => ticket.priority === priority);
+      }
+      
+      return res.json(filteredTickets);
     }
     
     // Get tickets by serial number
