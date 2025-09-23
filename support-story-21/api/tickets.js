@@ -36,9 +36,18 @@ const ticketRoutes = async (req, res) => {
         // Handle search parameter
         if (search) {
           const searchTerm = search.toLowerCase();
-          query = query.or(
-            `ticket_number.ilike.%${searchTerm}%,serial_number.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,contact_person.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`
-          );
+          // For numeric searches, we need to handle them differently
+          if (/^\d+$/.test(search)) {
+            // If search term is purely numeric, search by ID or exact ticket number
+            query = query.or(
+              `id.eq.${search},ticket_number.ilike.%${search}%,serial_number.ilike.%${search}%`
+            );
+          } else {
+            // Standard text search
+            query = query.or(
+              `ticket_number.ilike.%${searchTerm}%,serial_number.ilike.%${searchTerm}%,company_name.ilike.%${searchTerm}%,contact_person.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`
+            );
+          }
         }
         
         if (status && status !== 'all') {
@@ -56,8 +65,9 @@ const ticketRoutes = async (req, res) => {
         // Sort by creation date (newest first)
         query = query.order('created_at', { ascending: false });
         
-        // Remove the default limit of 1000 records by setting a large limit
-        const { data, error } = await query.limit(10000); // Adjust this number based on your needs
+        // Remove the default limit of 1000 records by setting a very large limit
+        // This ensures all tickets are displayed
+        const { data, error } = await query.limit(100000); // Increased to 100,000 to ensure all tickets are shown
         if (error) throw error;
         return res.json(data);
       }
@@ -99,13 +109,27 @@ const ticketRoutes = async (req, res) => {
       
       if (search) {
         const searchTerm = search.toLowerCase();
-        filteredTickets = filteredTickets.filter(ticket => 
-          ticket.ticket_number.toLowerCase().includes(searchTerm) ||
-          ticket.serial_number.toLowerCase().includes(searchTerm) ||
-          ticket.company_name.toLowerCase().includes(searchTerm) ||
-          ticket.contact_person.toLowerCase().includes(searchTerm) ||
-          ticket.email.toLowerCase().includes(searchTerm)
-        );
+        // Handle numeric search terms for mock data
+        if (/^\d+$/.test(search)) {
+          // For numeric searches, check ID, ticket number, and serial number
+          filteredTickets = filteredTickets.filter(ticket => 
+            ticket.id.toString().includes(search) ||
+            ticket.ticket_number.includes(search) ||
+            ticket.serial_number.includes(search) ||
+            ticket.company_name.toLowerCase().includes(searchTerm) ||
+            ticket.contact_person.toLowerCase().includes(searchTerm) ||
+            ticket.email.toLowerCase().includes(searchTerm)
+          );
+        } else {
+          // Standard text search for mock data
+          filteredTickets = filteredTickets.filter(ticket => 
+            ticket.ticket_number.toLowerCase().includes(searchTerm) ||
+            ticket.serial_number.toLowerCase().includes(searchTerm) ||
+            ticket.company_name.toLowerCase().includes(searchTerm) ||
+            ticket.contact_person.toLowerCase().includes(searchTerm) ||
+            ticket.email.toLowerCase().includes(searchTerm)
+          );
+        }
       }
       
       if (status && status !== 'all') {
@@ -115,6 +139,9 @@ const ticketRoutes = async (req, res) => {
       if (priority && priority !== 'all') {
         filteredTickets = filteredTickets.filter(ticket => ticket.priority === priority);
       }
+      
+      // Sort by creation date (newest first) for mock data
+      filteredTickets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
       
       return res.json(filteredTickets);
     }

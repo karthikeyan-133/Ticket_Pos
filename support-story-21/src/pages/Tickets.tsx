@@ -36,6 +36,7 @@ const formatToDubaiTime = (dateString: string) => {
       return 'Invalid Date';
     }
     
+    // Format to Dubai time with better precision
     return new Intl.DateTimeFormat('en-US', {
       timeZone: 'Asia/Dubai',
       year: 'numeric',
@@ -43,6 +44,7 @@ const formatToDubaiTime = (dateString: string) => {
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
       hour12: true
     }).format(date);
   } catch (error) {
@@ -66,8 +68,8 @@ const Tickets = () => {
       setError(null);
       const ticketsData = await ticketAPI.getAll({
         search: searchTerm,
-        status: filterStatus,
-        priority: filterPriority
+        status: filterStatus !== "all" ? filterStatus : undefined,
+        priority: filterPriority !== "all" ? filterPriority : undefined
       });
       
       setTickets(Array.isArray(ticketsData) ? ticketsData : []);
