@@ -5,6 +5,20 @@ const generateTicketNumber = () => {
   return `TICKET/${year}/${randomNumber}`;
 };
 
+// Import notification service
+let sendTicketClosedNotifications;
+try {
+  const notificationService = await import('../server/services/notificationService.js');
+  sendTicketClosedNotifications = notificationService.sendTicketClosedNotifications;
+} catch (error) {
+  console.error('Failed to import notification service:', error);
+  // Fallback function that does nothing
+  sendTicketClosedNotifications = async () => {
+    console.warn('Notification service not available');
+    return { email: { success: false }, whatsapp: { success: false } };
+  };
+}
+
 // Helper function to validate Tally serial number (must be exactly 9 digits)
 const validateSerialNumber = (serialNumber) => {
   if (!serialNumber) {

@@ -52,91 +52,84 @@ const EditTicket = () => {
         description: `Support ticket ${updatedTicket.ticketNumber} has been updated successfully.`,
       });
       
-      // If ticket was closed, send email and show WhatsApp option
+      // If ticket was closed, send email and automatically redirect to WhatsApp
       if (isClosingTicket) {
-        // Show toast with WhatsApp option
-        toast({
-          title: "Ticket Closed",
-          description: "Customer will receive email notification. You can also send a WhatsApp message.",
-          action: (
-            <button 
-              onClick={() => {
-                try {
-                  // Ensure we have a contact person and ticket number
-                  const contactPerson = updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer';
-                  const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
-                  const resolution = updatedTicket.resolution || 'No resolution details provided.';
-                  
-                  // Create the exact message format you want
-                  const message = `Hello ${contactPerson}, Your support ticket ${ticketNumber} has been resolved. Resolution Details: ${resolution} Thank you for your patience! Techzon Support Team`;
-                  
-                  // Ensure mobile number exists and is properly formatted
-                  let mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
-                  
-                  // Handle various data types that might come from the API
-                  if (mobileNumber === null || mobileNumber === undefined) {
-                    mobileNumber = '';
-                  } else if (typeof mobileNumber !== 'string') {
-                    mobileNumber = String(mobileNumber);
-                  }
-                  
-                  // Check if mobile number is empty or invalid
-                  if (!mobileNumber || mobileNumber.trim() === '') {
-                    toast({
-                      title: "Error",
-                      description: "Mobile number not available for WhatsApp message.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  
-                  // Safely clean the mobile number
-                  let cleanNumber = '';
-                  try {
-                    cleanNumber = mobileNumber.replace(/\D/g, '');
-                  } catch (error) {
-                    console.error('Error cleaning mobile number:', error);
-                    toast({
-                      title: "Error",
-                      description: "Invalid mobile number format for WhatsApp message.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  
-                  if (!cleanNumber || cleanNumber.trim() === '') {
-                    toast({
-                      title: "Error",
-                      description: "Invalid mobile number format for WhatsApp message.",
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  
-                  // Add country code if not present (assuming UAE/India format)
-                  const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
-                  
-                  // Properly encode the message for URL
-                  const encodedMessage = encodeURIComponent(message);
-                  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
-                  
-                  console.log('WhatsApp URL:', whatsappUrl); // For debugging
-                  window.open(whatsappUrl, '_blank');
-                } catch (error) {
-                  console.error('Error in WhatsApp redirect:', error);
-                  toast({
-                    title: "Error",
-                    description: "Failed to open WhatsApp. Please try again.",
-                    variant: "destructive",
-                  });
-                }
-              }}
-              className="inline-flex items-center px-3 py-1 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700"
-            >
-              Send WhatsApp
-            </button>
-          ),
-        });
+        // Send email notification (handled by backend)
+        // Automatically redirect to WhatsApp
+        try {
+          // Ensure we have a contact person and ticket number
+          const contactPerson = updatedTicket.contactPerson || updatedTicket.contact_person || 'Customer';
+          const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
+          const resolution = updatedTicket.resolution || 'No resolution details provided.';
+          
+          // Create the exact message format you want
+          const message = `Hello ${contactPerson}, Your support ticket ${ticketNumber} has been resolved. Resolution Details: ${resolution} Thank you for your patience! Techzon Support Team`;
+          
+          // Ensure mobile number exists and is properly formatted
+          let mobileNumber = updatedTicket.mobileNumber || updatedTicket.mobile_number || '';
+          
+          // Handle various data types that might come from the API
+          if (mobileNumber === null || mobileNumber === undefined) {
+            mobileNumber = '';
+          } else if (typeof mobileNumber !== 'string') {
+            mobileNumber = String(mobileNumber);
+          }
+          
+          // Check if mobile number is empty or invalid
+          if (!mobileNumber || mobileNumber.trim() === '') {
+            toast({
+              title: "WhatsApp Error",
+              description: "Mobile number not available for WhatsApp message. Customer will still receive email notification.",
+              variant: "destructive",
+            });
+          } else {
+            // Safely clean the mobile number
+            let cleanNumber = '';
+            try {
+              cleanNumber = mobileNumber.replace(/\D/g, '');
+            } catch (error) {
+              console.error('Error cleaning mobile number:', error);
+              toast({
+                title: "WhatsApp Error",
+                description: "Invalid mobile number format for WhatsApp message. Customer will still receive email notification.",
+                variant: "destructive",
+              });
+              cleanNumber = '';
+            }
+            
+            if (cleanNumber && cleanNumber.trim() !== '') {
+              // Add country code if not present (assuming UAE/India format)
+              const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
+              
+              // Properly encode the message for URL
+              const encodedMessage = encodeURIComponent(message);
+              const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+              
+              console.log('WhatsApp URL:', whatsappUrl); // For debugging
+              // Automatically open WhatsApp in a new tab
+              window.open(whatsappUrl, '_blank');
+              
+              // Show success message
+              toast({
+                title: "Ticket Closed",
+                description: "Customer will receive email notification and WhatsApp message.",
+              });
+            } else {
+              toast({
+                title: "WhatsApp Error",
+                description: "Invalid mobile number format for WhatsApp message. Customer will still receive email notification.",
+                variant: "destructive",
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Error in WhatsApp redirect:', error);
+          toast({
+            title: "WhatsApp Error",
+            description: "Failed to send WhatsApp message. Customer will still receive email notification.",
+            variant: "destructive",
+          });
+        }
       }
       
       // Redirect to ticket detail page

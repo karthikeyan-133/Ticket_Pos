@@ -395,20 +395,18 @@ const TicketForm = ({ initialData, onSubmit, isLoading, submitButtonText = "Save
         />
       </div>
       
-      {/* Resolution (only show for existing tickets) */}
-      {initialData && (
-        <div className="space-y-2">
-          <Label htmlFor="resolution">Resolution</Label>
-          <Textarea
-            id="resolution"
-            name="resolution"
-            value={formData.resolution}
-            onChange={handleChange}
-            placeholder="Enter resolution details"
-            rows={3}
-          />
-        </div>
-      )}
+      {/* Resolution (show for both new and existing tickets) */}
+      <div className="space-y-2">
+        <Label htmlFor="resolution">Resolution</Label>
+        <Textarea
+          id="resolution"
+          name="resolution"
+          value={formData.resolution}
+          onChange={handleChange}
+          placeholder="Enter resolution details"
+          rows={3}
+        />
+      </div>
       
       <Button type="submit" disabled={isLoading} className="w-full">
         {isLoading ? "Saving..." : submitButtonText}
