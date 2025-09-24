@@ -271,12 +271,20 @@ const generateWhatsAppMessageUrl = (ticket) => {
     
     const message = `Hello ${normalizedTicket.contactPerson || 'Customer'}, Your support ticket ${normalizedTicket.ticketNumber || 'N/A'} has been resolved. Resolution Details: ${resolutionText} Thank you for your patience! Techzon Support Team`;
     
-    // Try a different approach - use api.whatsapp.com instead of wa.me
+    // Generate both URLs for better compatibility
     const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
+    const webUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
+    const apiUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
     
-    console.log('Generated WhatsApp URL:', whatsappUrl);
-    return { success: true, url: whatsappUrl };
+    console.log('Generated WhatsApp URLs:', { webUrl, apiUrl });
+    return { 
+      success: true, 
+      urls: {
+        web: webUrl,
+        api: apiUrl
+      },
+      message: message
+    };
   } catch (error) {
     console.error('Error generating WhatsApp message URL:', error);
     return { success: false, error: error.message };

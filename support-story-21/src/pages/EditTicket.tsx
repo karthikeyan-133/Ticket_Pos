@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import TicketForm from "@/components/tickets/TicketForm";
-import { ticketAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
 
 const EditTicket = () => {
@@ -125,17 +124,55 @@ const EditTicket = () => {
                 whatsappNumber = cleanNumber;
               }
               
-              // Try a different approach - use api.whatsapp.com instead of wa.me
-              // Also use rawurlencode instead of urlencode for better compatibility
+              // Improved WhatsApp redirect approach for better compatibility
               const encodedMessage = encodeURIComponent(message);
-              const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
               
-              console.log('WhatsApp URL:', whatsappUrl); // For debugging
-              // Try opening in the same window first, then fallback to new tab
-              const newWindow = window.open(whatsappUrl, '_blank');
-              if (!newWindow) {
-                // Fallback: try opening in the same window
-                window.location.href = whatsappUrl;
+              // Detect if user is on mobile or desktop
+              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              
+              if (isMobile) {
+                // For mobile devices, use the standard WhatsApp URL scheme
+                const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
+                window.open(whatsappUrl, '_blank');
+              } else {
+                // For desktop, provide options to the user
+                toast({
+                  title: "Send WhatsApp Message",
+                  description: "Click the button below to send the WhatsApp message.",
+                  action: (
+                    <Button 
+                      onClick={() => {
+                        // Try multiple approaches for desktop WhatsApp
+                        const webUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
+                        const apiUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
+                        
+                        // Try to open WhatsApp Web first
+                        const newWindow = window.open(webUrl, '_blank');
+                        
+                        // If that fails, provide a fallback
+                        if (!newWindow) {
+                          // Show instructions to user
+                          if (confirm("Unable to open WhatsApp automatically. Click OK to open WhatsApp Web manually, or Cancel to copy the message to clipboard.")) {
+                            window.open(apiUrl, '_blank');
+                          } else {
+                            // Copy message to clipboard
+                            navigator.clipboard.writeText(message).then(() => {
+                              toast({
+                                title: "Message Copied",
+                                description: "Message copied to clipboard. You can now paste it in WhatsApp.",
+                              });
+                            }).catch(() => {
+                              // Fallback: show alert with message
+                              alert("Please copy this message and send it via WhatsApp:\n\n" + message);
+                            });
+                          }
+                        }
+                      }}
+                    >
+                      Send WhatsApp
+                    </Button>
+                  ),
+                });
               }
               
               // Show success message
