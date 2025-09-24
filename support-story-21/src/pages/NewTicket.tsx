@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Search, ChevronLeft, History } from "lucide-react";
+import { ChevronLeft, History } from "lucide-react";
 import TicketForm from "@/components/tickets/TicketForm";
 import { ticketAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
@@ -13,9 +11,6 @@ const NewTicket = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolutionHistory, setResolutionHistory] = useState<any[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [serialNumberSearch, setSerialNumberSearch] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [customerData, setCustomerData] = useState<any>(null);
   const navigate = useNavigate();
 
   const handleCreateTicket = async (data: any) => {
@@ -39,89 +34,37 @@ const NewTicket = () => {
     }
   };
 
-  const handleSerialNumberSearch = async () => {
-    if (!serialNumberSearch.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a serial number to search.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate serial number format (must be 9 digits)
-    const cleanSerialNumber = serialNumberSearch.replace(/\D/g, '').slice(0, 9);
-    if (cleanSerialNumber.length !== 9) {
-      toast({
-        title: "Error",
-        description: "Tally serial number must be exactly 9 digits",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsSearching(true);
-    try {
-      // Fetch customer details for this serial number
-      const customerData = await ticketAPI.getBySerialNumber(cleanSerialNumber);
-      
-      // Fetch resolution history for this serial number
-      const history = await ticketAPI.getResolutionHistory(cleanSerialNumber);
-      
-      // Update the customer data
-      setCustomerData(customerData);
-      
-      // Update the resolution history
-      setResolutionHistory(history);
-      
-      // If we found customer data, show a success message
-      if (customerData && Object.keys(customerData).length > 0) {
-        toast({
-          title: "Customer Found",
-          description: "Customer details have been pre-filled in the form.",
-        });
+  const handleSerialNumberChange = async (serialNumber: string) => {
+    if (serialNumber.length === 9) {
+      try {
+        // Fetch customer details for this serial number
+        const customerData = await ticketAPI.getBySerialNumber(serialNumber);
+        
+        // Fetch resolution history for this serial number
+        const history = await ticketAPI.getResolutionHistory(serialNumber);
+        
+        // Update the resolution history
+        setResolutionHistory(history);
+        
+        // Show toast notifications
+        if (history.length > 0) {
+          toast({
+            title: "History Found",
+            description: `Found ${history.length} previous tickets for this serial number.`,
+          });
+        } else {
+          toast({
+            title: "No History",
+            description: "No previous tickets found for this serial number.",
+          });
+        }
+      } catch (error: any) {
+        console.error("Error fetching serial number data:", error);
+        setResolutionHistory([]);
       }
-      
-      // Show history message
-      if (history.length > 0) {
-        toast({
-          title: "History Found",
-          description: `Found ${history.length} previous tickets for this serial number.`,
-        });
-      } else {
-        toast({
-          title: "No History",
-          description: "No previous tickets found for this serial number.",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error searching serial number:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to search serial number. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSearching(false);
+    } else {
+      setResolutionHistory([]);
     }
-  };
-
-  // Prepare initial data for the form
-  const prepareInitialData = () => {
-    if (!customerData || Object.keys(customerData).length === 0) {
-      return {};
-    }
-    
-    return {
-      serialNumber: customerData.serial_number || customerData.serialNumber || "",
-      companyName: customerData.company_name || customerData.companyName || "",
-      contactPerson: customerData.contact_person || customerData.contactPerson || "",
-      mobileNumber: customerData.mobile_number || customerData.mobileNumber || "",
-      email: customerData.email || "",
-      userType: customerData.user_type || customerData.userType || "single user",
-      expiryDate: customerData.expiry_date || customerData.expiryDate || "",
-      assignedExecutive: customerData.assigned_executive || customerData.assignedExecutive || ""
-    };
   };
 
   return (
@@ -139,46 +82,21 @@ const NewTicket = () => {
         <h1 className="text-3xl font-bold text-foreground flex-1">Create New Ticket</h1>
       </div>
 
-      {/* Serial Number Search Section */}
+      {/* New Ticket Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Search by Serial Number</CardTitle>
+          <CardTitle>New Support Ticket</CardTitle>
           <CardDescription>
-            Search for existing customer details and resolution history
+            Fill in the details below to create a new support ticket. All fields marked with * are required.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Label htmlFor="serialSearch" className="sr-only">
-                Serial Number
-              </Label>
-              <Input
-                id="serialSearch"
-                placeholder="Enter 9-digit Tally serial number"
-                value={serialNumberSearch}
-                onChange={(e) => {
-                  // Only allow digits and limit to 9 characters
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 9);
-                  setSerialNumberSearch(value);
-                }}
-                maxLength={9}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleSerialNumberSearch();
-                  }
-                }}
-              />
-            </div>
-            <Button 
-              onClick={handleSerialNumberSearch} 
-              disabled={isSearching}
-              className="flex items-center gap-2"
-            >
-              <Search className="h-4 w-4" />
-              {isSearching ? "Searching..." : "Search"}
-            </Button>
-          </div>
+          <TicketForm 
+            onSubmit={handleCreateTicket} 
+            isLoading={isSubmitting}
+            submitButtonText="Create Ticket"
+            onSerialNumberChange={handleSerialNumberChange}
+          />
         </CardContent>
       </Card>
 
@@ -242,24 +160,6 @@ const NewTicket = () => {
           )}
         </Card>
       )}
-
-      {/* New Ticket Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>New Support Ticket</CardTitle>
-          <CardDescription>
-            Fill in the details below to create a new support ticket. All fields marked with * are required.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TicketForm 
-            initialData={prepareInitialData()}
-            onSubmit={handleCreateTicket} 
-            isLoading={isSubmitting}
-            submitButtonText="Create Ticket"
-          />
-        </CardContent>
-      </Card>
     </div>
   );
 };

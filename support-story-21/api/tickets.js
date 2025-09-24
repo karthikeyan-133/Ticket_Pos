@@ -237,6 +237,49 @@ const ticketRoutes = async (req, res) => {
         return res.json(mockTickets);
       }
       
+      // Check if this is for the specific serial number 764043741
+      if (serialNumber === '764043741') {
+        const mockTickets = [
+          { 
+            id: 201, 
+            ticket_number: 'TICKET/2023/2001',
+            serial_number: '764043741',
+            company_name: 'XYZ Enterprises',
+            contact_person: 'Robert Davis',
+            email: 'robert@xyzenterprises.com',
+            mobile_number: '9988776655',
+            user_type: 'single user',
+            expiry_date: '2025-06-30',
+            assigned_executive: 'Emma Thompson',
+            status: 'closed',
+            priority: 'medium',
+            issue_related: 'licence',
+            resolution: 'Renewed expired Tally licence and activated new serial number',
+            created_at: '2023-03-10T11:20:00Z',
+            closed_at: '2023-03-10T13:45:00Z'
+          },
+          { 
+            id: 202, 
+            ticket_number: 'TICKET/2023/2002',
+            serial_number: '764043741',
+            company_name: 'XYZ Enterprises',
+            contact_person: 'Robert Davis',
+            email: 'robert@xyzenterprises.com',
+            mobile_number: '9988776655',
+            user_type: 'single user',
+            expiry_date: '2025-06-30',
+            assigned_executive: 'James Miller',
+            status: 'closed',
+            priority: 'high',
+            issue_related: 'data',
+            resolution: 'Recovered corrupted company data from backup and restored to Tally',
+            created_at: '2023-07-18T14:30:00Z',
+            closed_at: '2023-07-18T16:15:00Z'
+          }
+        ];
+        return res.json(mockTickets);
+      }
+      
       const mockTickets = [
         { id: 1, ticket_number: 'TICKET/2023/0001', status: 'closed', resolution: 'Fixed data corruption issue', created_at: '2023-01-15T10:30:00Z', serial_number: serialNumber },
         { id: 2, ticket_number: 'TICKET/2023/0002', status: 'closed', resolution: 'Resolved network connectivity', created_at: '2023-01-16T14:45:00Z', serial_number: serialNumber }
@@ -295,6 +338,29 @@ const ticketRoutes = async (req, res) => {
           resolution: 'Resolved network connectivity issues with Tally server',
           created_at: '2023-08-22T09:15:00Z',
           closed_at: '2023-08-22T11:30:00Z'
+        };
+        return res.json(mockTicket);
+      }
+      
+      // Check if this is for the specific serial number 764043741
+      if (serialNumber === '764043741') {
+        const mockTicket = { 
+          id: 202, 
+          ticket_number: 'TICKET/2023/2002',
+          serial_number: '764043741',
+          company_name: 'XYZ Enterprises',
+          contact_person: 'Robert Davis',
+          email: 'robert@xyzenterprises.com',
+          mobile_number: '9988776655',
+          user_type: 'single user',
+          expiry_date: '2025-06-30',
+          assigned_executive: 'James Miller',
+          status: 'closed',
+          priority: 'high',
+          issue_related: 'data',
+          resolution: 'Recovered corrupted company data from backup and restored to Tally',
+          created_at: '2023-07-18T14:30:00Z',
+          closed_at: '2023-07-18T16:15:00Z'
         };
         return res.json(mockTicket);
       }

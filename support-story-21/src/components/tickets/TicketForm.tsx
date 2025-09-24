@@ -104,6 +104,7 @@ const TicketForm = ({ initialData, onSubmit, isLoading, submitButtonText = "Save
     try {
       const data = await ticketAPI.getBySerialNumber(serialNumber);
       // Only populate customer details if this is a new ticket (no initialData)
+      // and if we actually received data from the API
       if (!initialData && data && Object.keys(data).length > 0) {
         setFormData(prev => ({
           ...prev,
