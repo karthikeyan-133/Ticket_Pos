@@ -234,11 +234,16 @@ const TicketDetail = () => {
               
               // Properly encode the message for URL
               const encodedMessage = encodeURIComponent(message);
+              // Try a different approach for URL construction
               const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
               
               console.log('WhatsApp URL:', whatsappUrl); // For debugging
-              // Automatically open WhatsApp in a new tab
-              window.open(whatsappUrl, '_blank');
+              // Try opening in the same window first, then fallback to new tab
+              const newWindow = window.open(whatsappUrl, '_blank');
+              if (!newWindow) {
+                // Fallback: try opening in the same window
+                window.location.href = whatsappUrl;
+              }
               
               // Show success message
               toast({
