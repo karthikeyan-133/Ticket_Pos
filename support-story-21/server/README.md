@@ -10,7 +10,7 @@ This is the backend server for the Tally Support Ticket System.
 - WhatsApp notifications using Twilio
 - Serial number validation
 - Automatic ticket number generation
-- Dubai timezone handling
+- India timezone handling
 
 ## Prerequisites
 

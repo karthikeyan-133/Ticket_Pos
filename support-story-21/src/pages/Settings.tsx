@@ -83,6 +83,7 @@ const Settings = () => {
                 onChange={(e) => setTimezone(e.target.value)}
                 className="w-full px-3 py-2 border border-input rounded-md bg-background"
               >
+                <option value="Asia/Kolkata">India (UTC+5:30)</option>
                 <option value="Asia/Dubai">Dubai (UTC+4)</option>
                 <option value="America/New_York">New York (UTC-5)</option>
                 <option value="Europe/London">London (UTC+0)</option>

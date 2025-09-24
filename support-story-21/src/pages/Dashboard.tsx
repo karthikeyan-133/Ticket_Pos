@@ -208,7 +208,12 @@ const Dashboard = () => {
                   <div className="text-right">
                     <p className="text-sm font-medium text-foreground">{ticket.company_name || ticket.companyName || 'N/A'}</p>
                     <p className="text-xs text-muted-foreground">
-                      {ticket.created_at || ticket.createdAt ? new Date(ticket.created_at || ticket.createdAt).toLocaleDateString() : 'N/A'}
+                      {ticket.created_at || ticket.createdAt ? new Date(ticket.created_at || ticket.createdAt).toLocaleDateString('en-US', {
+                        timeZone: 'Asia/Kolkata',
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      }) : 'N/A'}
                     </p>
                   </div>
                 </div>

@@ -8,7 +8,7 @@ import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { salesAPI } from "@/services/salesApi";
 import { toast } from "@/components/ui/use-toast";
 
-// Format date to Dubai time (UTC+4)
+// Format date to India time (UTC+5:30)
 const formatToDubaiTime = (dateString: string) => {
   // Handle invalid or missing date values
   if (!dateString || dateString === 'null' || dateString === 'undefined') {
@@ -23,7 +23,7 @@ const formatToDubaiTime = (dateString: string) => {
     }
     
     return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Dubai',
+      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -51,7 +51,7 @@ const formatDate = (dateString: string) => {
     }
     
     return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Dubai',
+      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'short',
       day: 'numeric'

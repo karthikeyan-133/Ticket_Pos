@@ -126,7 +126,12 @@ const NewTicket = () => {
                       <div>
                         <h3 className="font-semibold">{ticket.ticket_number}</h3>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(ticket.created_at).toLocaleDateString()} - {ticket.status}
+                          {new Date(ticket.created_at).toLocaleDateString('en-US', {
+                            timeZone: 'Asia/Kolkata',
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })} - {ticket.status}
                         </p>
                       </div>
                       {ticket.priority && (

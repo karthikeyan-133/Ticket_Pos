@@ -23,7 +23,7 @@ import { ticketAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
 import ExportToExcel from "@/components/ExportToExcel";
 
-// Format date to Dubai time (UTC+4)
+// Format date to India time (UTC+5:30)
 const formatToDubaiTime = (dateString: string) => {
   // Handle invalid or missing date values
   if (!dateString || dateString === 'null' || dateString === 'undefined') {
@@ -37,9 +37,9 @@ const formatToDubaiTime = (dateString: string) => {
       return 'Invalid Date';
     }
     
-    // Format to Dubai time with better precision
+    // Format to India time with better precision
     return new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Asia/Dubai',
+      timeZone: 'Asia/Kolkata',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
