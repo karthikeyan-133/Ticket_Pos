@@ -228,6 +228,13 @@ const generateWhatsAppMessageUrl = (ticket) => {
     
     // Create the WhatsApp message
     const resolutionText = ticket.resolution || 'No resolution details provided.';
+    
+    // Check if resolution is provided
+    if (!ticket.resolution || ticket.resolution.trim() === '') {
+      console.error('No resolution provided for ticket:', ticket.ticketNumber);
+      return { success: false, error: 'Resolution details are required for WhatsApp message' };
+    }
+    
     const message = `Hello ${ticket.contactPerson || 'Customer'}, Your support ticket ${ticket.ticketNumber || 'N/A'} has been resolved. Resolution Details: ${resolutionText} Thank you for your patience! Techzon Support Team`;
     
     // Properly encode the message for URL

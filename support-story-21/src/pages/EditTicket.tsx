@@ -62,6 +62,16 @@ const EditTicket = () => {
           const ticketNumber = updatedTicket.ticketNumber || updatedTicket.ticket_number || 'N/A';
           const resolution = updatedTicket.resolution || 'No resolution details provided.';
           
+          // Check if resolution is provided
+          if (!updatedTicket.resolution || updatedTicket.resolution.trim() === '') {
+            toast({
+              title: "Resolution Required",
+              description: "Please provide resolution details before closing the ticket.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
           // Create the exact message format you want
           const message = `Hello ${contactPerson}, Your support ticket ${ticketNumber} has been resolved. Resolution Details: ${resolution} Thank you for your patience! Techzon Support Team`;
           
