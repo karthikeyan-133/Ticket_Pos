@@ -137,30 +137,42 @@ const sendEmailNotification = async (ticket) => {
       return { success: false, error: 'No email address provided for the ticket' };
     }
     
+    // Normalize ticket data to handle both snake_case and camelCase field names
+    const normalizedTicket = {
+      ticketNumber: ticket.ticket_number || ticket.ticketNumber,
+      issueRelated: ticket.issue_related || ticket.issueRelated,
+      priority: ticket.priority,
+      contactPerson: ticket.contact_person || ticket.contactPerson,
+      email: ticket.email,
+      resolution: ticket.resolution,
+      createdAt: ticket.created_at || ticket.createdAt,
+      closedAt: ticket.closed_at || ticket.closedAt
+    };
+    
     // Email content
     const mailOptions = {
       from: process.env.FROM_EMAIL || process.env.EMAIL_USER || process.env.VERCEL_SMTP_USER || 'support@techzontech.com',
-      to: ticket.email,
-      subject: `Your Support Ticket ${ticket.ticketNumber} Has Been Resolved`,
+      to: normalizedTicket.email,
+      subject: `Your Support Ticket ${normalizedTicket.ticketNumber} Has Been Resolved`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Ticket Resolved</h2>
-          <p>Dear ${ticket.contactPerson || 'Customer'},</p>
+          <p>Dear ${normalizedTicket.contactPerson || 'Customer'},</p>
           
           <p>We're pleased to inform you that your support ticket has been resolved:</p>
           
           <div style="background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3>Ticket Details:</h3>
-            <p><strong>Ticket Number:</strong> ${ticket.ticketNumber || 'N/A'}</p>
-            <p><strong>Issue Type:</strong> ${ticket.issueRelated || 'N/A'}</p>
-            <p><strong>Priority:</strong> ${ticket.priority || 'N/A'}</p>
-            <p><strong>Created At:</strong> ${ticket.createdAt ? new Date(ticket.createdAt).toLocaleString() : 'N/A'}</p>
-            <p><strong>Closed At:</strong> ${ticket.closedAt ? new Date(ticket.closedAt).toLocaleString() : 'N/A'}</p>
+            <p><strong>Ticket Number:</strong> ${normalizedTicket.ticketNumber || 'N/A'}</p>
+            <p><strong>Issue Type:</strong> ${normalizedTicket.issueRelated || 'N/A'}</p>
+            <p><strong>Priority:</strong> ${normalizedTicket.priority || 'N/A'}</p>
+            <p><strong>Created At:</strong> ${normalizedTicket.createdAt ? new Date(normalizedTicket.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'N/A'}</p>
+            <p><strong>Closed At:</strong> ${normalizedTicket.closedAt ? new Date(normalizedTicket.closedAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : 'N/A'}</p>
           </div>
           
           <div style="background-color: #e8f4fd; padding: 15px; border-radius: 5px; margin: 20px 0;">
             <h3>Resolution:</h3>
-            <p>${ticket.resolution || 'No resolution details provided.'}</p>
+            <p>${normalizedTicket.resolution || 'No resolution details provided.'}</p>
           </div>
           
           <p>Thank you for your patience. If you have any further questions or concerns, please don't hesitate to contact us.</p>
@@ -204,16 +216,24 @@ const sendEmailNotification = async (ticket) => {
 // Generate WhatsApp message URL (for client-side redirect)
 const generateWhatsAppMessageUrl = (ticket) => {
   try {
+    // Normalize ticket data to handle both snake_case and camelCase field names
+    const normalizedTicket = {
+      ticketNumber: ticket.ticket_number || ticket.ticketNumber,
+      contactPerson: ticket.contact_person || ticket.contactPerson,
+      mobileNumber: ticket.mobile_number || ticket.mobileNumber,
+      resolution: ticket.resolution
+    };
+    
     // Validate required fields
-    if (!ticket.mobileNumber) {
-      console.error('No mobile number provided for ticket:', ticket.ticketNumber);
+    if (!normalizedTicket.mobileNumber) {
+      console.error('No mobile number provided for ticket:', normalizedTicket.ticketNumber);
       return { success: false, error: 'No mobile number provided for the ticket' };
     }
     
     // Clean and format the mobile number
     let cleanNumber = '';
     try {
-      cleanNumber = ticket.mobileNumber.replace(/\D/g, '');
+      cleanNumber = normalizedTicket.mobileNumber.replace(/\D/g, '');
     } catch (error) {
       console.error('Error cleaning mobile number:', error);
       return { success: false, error: 'Invalid mobile number format' };
@@ -241,15 +261,15 @@ const generateWhatsAppMessageUrl = (ticket) => {
     }
     
     // Create the WhatsApp message
-    const resolutionText = ticket.resolution || 'No resolution details provided.';
+    const resolutionText = normalizedTicket.resolution || 'No resolution details provided.';
     
     // Check if resolution is provided
-    if (!ticket.resolution || ticket.resolution.trim() === '') {
-      console.error('No resolution provided for ticket:', ticket.ticketNumber);
+    if (!normalizedTicket.resolution || normalizedTicket.resolution.trim() === '') {
+      console.error('No resolution provided for ticket:', normalizedTicket.ticketNumber);
       return { success: false, error: 'Resolution details are required for WhatsApp message' };
     }
     
-    const message = `Hello ${ticket.contactPerson || 'Customer'}, Your support ticket ${ticket.ticketNumber || 'N/A'} has been resolved. Resolution Details: ${resolutionText} Thank you for your patience! Techzon Support Team`;
+    const message = `Hello ${normalizedTicket.contactPerson || 'Customer'}, Your support ticket ${normalizedTicket.ticketNumber || 'N/A'} has been resolved. Resolution Details: ${resolutionText} Thank you for your patience! Techzon Support Team`;
     
     // Try a different approach - use api.whatsapp.com instead of wa.me
     const encodedMessage = encodeURIComponent(message);
@@ -265,7 +285,7 @@ const generateWhatsAppMessageUrl = (ticket) => {
 
 // Send ticket closed notifications (email and WhatsApp URL generation)
 const sendTicketClosedNotifications = async (ticket) => {
-  console.log(`Sending notifications for closed ticket ${ticket.ticketNumber}`);
+  console.log(`Sending notifications for closed ticket ${ticket.ticket_number || ticket.ticketNumber}`);
   console.log('Full ticket data:', JSON.stringify(ticket, null, 2));
   
   // Validate ticket data
