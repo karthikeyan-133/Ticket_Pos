@@ -224,7 +224,21 @@ const generateWhatsAppMessageUrl = (ticket) => {
     }
     
     // Add country code if not present (assuming UAE/India format)
-    const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
+    // For UAE numbers starting with 05, we need to replace the leading 0 with 971
+    let whatsappNumber;
+    if (cleanNumber.startsWith('05') && cleanNumber.length === 10) {
+      // UAE format: 05XXXXXXXX -> 9715XXXXXXXX
+      whatsappNumber = `971${cleanNumber.substring(1)}`;
+    } else if (cleanNumber.length === 9 && cleanNumber.startsWith('5')) {
+      // UAE format: 5XXXXXXXX -> 9715XXXXXXXX
+      whatsappNumber = `971${cleanNumber}`;
+    } else if (cleanNumber.length === 10) {
+      // Other 10-digit formats: add 971 prefix
+      whatsappNumber = `971${cleanNumber}`;
+    } else {
+      // Use as-is for other formats
+      whatsappNumber = cleanNumber;
+    }
     
     // Create the WhatsApp message
     const resolutionText = ticket.resolution || 'No resolution details provided.';
