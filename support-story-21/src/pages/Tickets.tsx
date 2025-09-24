@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Search, Filter, Plus, MoreHorizontal } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Search, Filter, Plus, MoreHorizontal, Download, History } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { ticketAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
+import ExportToExcel from "@/components/ExportToExcel";
 
 // Format date to Dubai time (UTC+4)
 const formatToDubaiTime = (dateString: string) => {
@@ -60,6 +61,37 @@ const Tickets = () => {
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const [serialNumberSearch, setSerialNumberSearch] = useState("");
+
+  // Enhanced search function that navigates directly to ticket if exact match found
+  const handleDirectTicketSearch = useCallback(async (term: string) => {
+    if (!term.trim()) return false;
+
+    try {
+      // First check if this is a direct ticket number
+      const ticketsData = await ticketAPI.getAll({
+        search: term
+      });
+
+      if (Array.isArray(ticketsData)) {
+        // Check if we have exactly one result and it's an exact match for ticket number
+        const exactMatch = ticketsData.find(ticket => 
+          (ticket.ticket_number || ticket.ticketNumber) === term
+        );
+
+        if (exactMatch && ticketsData.length === 1) {
+          // Navigate directly to the ticket
+          navigate(`/tickets/${exactMatch.id}`);
+          return true;
+        }
+      }
+      return false;
+    } catch (error: any) {
+      console.error("Error in direct ticket search:", error);
+      return false;
+    }
+  }, [navigate]);
 
   // Fetch tickets from backend
   const fetchTickets = async () => {
@@ -87,10 +119,99 @@ const Tickets = () => {
     }
   };
 
+  // Fetch tickets by serial number
+  const fetchTicketsBySerialNumber = async () => {
+    if (!serialNumberSearch.trim()) {
+      // If serial number search is empty, fetch all tickets
+      fetchTickets();
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Validate serial number format (must be 9 digits)
+      const cleanSerialNumber = serialNumberSearch.replace(/\D/g, '');
+      if (cleanSerialNumber.length !== 9) {
+        throw new Error('Tally serial number must be exactly 9 digits');
+      }
+      
+      const ticketsData = await ticketAPI.getAll({
+        serialNumber: cleanSerialNumber
+      });
+      
+      setTickets(Array.isArray(ticketsData) ? ticketsData : []);
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tickets by serial number. Please try again.';
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      console.error("Error fetching tickets by serial number:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch resolution history by serial number
+  const fetchResolutionHistory = async () => {
+    if (!serialNumberSearch.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a Tally serial number to view resolution history.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Validate serial number format (must be 9 digits)
+      const cleanSerialNumber = serialNumberSearch.replace(/\D/g, '');
+      if (cleanSerialNumber.length !== 9) {
+        throw new Error('Tally serial number must be exactly 9 digits');
+      }
+      
+      const historyData = await ticketAPI.getResolutionHistory(cleanSerialNumber);
+      
+      setTickets(Array.isArray(historyData) ? historyData : []);
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch resolution history. Please try again.';
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      console.error("Error fetching resolution history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle search with direct navigation for exact ticket numbers
+  const handleSearch = async () => {
+    // Try direct ticket navigation first
+    const navigated = await handleDirectTicketSearch(searchTerm);
+    if (!navigated) {
+      // If not navigated, trigger normal search
+      fetchTickets();
+    }
+  };
+
   // Fetch tickets on component mount and when filters change
   useEffect(() => {
-    fetchTickets();
-  }, [searchTerm, filterStatus, filterPriority]);
+    if (serialNumberSearch) {
+      fetchTicketsBySerialNumber();
+    } else {
+      fetchTickets();
+    }
+  }, [filterStatus, filterPriority, serialNumberSearch]);
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
@@ -143,6 +264,21 @@ const Tickets = () => {
            errorMessage.includes('Network error');
   };
 
+  // Define export columns
+  const exportColumns = [
+    { key: 'ticket_number', label: 'Ticket Number' },
+    { key: 'serial_number', label: 'Serial Number' },
+    { key: 'company_name', label: 'Company Name' },
+    { key: 'contact_person', label: 'Contact Person' },
+    { key: 'issue_related', label: 'Issue Type' },
+    { key: 'status', label: 'Status' },
+    { key: 'priority', label: 'Priority' },
+    { key: 'assigned_executive', label: 'Assigned To' },
+    { key: 'created_at', label: 'Created At' },
+    { key: 'closed_at', label: 'Closed At' },
+    { key: 'resolution', label: 'Resolution' }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -153,27 +289,84 @@ const Tickets = () => {
             Manage and track all customer support requests
           </p>
         </div>
-        <Button asChild className="bg-gradient-to-r from-primary to-primary-hover">
-          <NavLink to="/tickets/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Ticket
-          </NavLink>
-        </Button>
+        <div className="flex space-x-2">
+          <ExportToExcel 
+            data={tickets} 
+            filename="support-tickets" 
+            columns={exportColumns} 
+          />
+          <Button asChild className="bg-gradient-to-r from-primary to-primary-hover">
+            <NavLink to="/tickets/new">
+              <Plus className="mr-2 h-4 w-4" />
+              New Ticket
+            </NavLink>
+          </Button>
+        </div>
       </div>
 
       {/* Filters and Search */}
       <Card>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder="Search tickets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSearch();
+                  }
+                }}
                 className="pl-9"
               />
+              <Button 
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                variant="ghost"
+                size="sm"
+                onClick={handleSearch}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
             </div>
+            
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="9-digit Serial Number..."
+                value={serialNumberSearch}
+                onChange={(e) => {
+                  // Only allow digits and limit to 9 characters
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 9);
+                  setSerialNumberSearch(value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    fetchTicketsBySerialNumber();
+                  }
+                }}
+                className="pl-9"
+                maxLength={9}
+              />
+              <Button 
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+                variant="ghost"
+                size="sm"
+                onClick={fetchTicketsBySerialNumber}
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <Button 
+              onClick={fetchResolutionHistory}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <History className="h-4 w-4" />
+              Resolution History
+            </Button>
             
             <div className="flex items-center space-x-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
@@ -203,132 +396,125 @@ const Tickets = () => {
                 <option value="low">Low</option>
               </select>
             </div>
-            
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setSearchTerm("");
-                  setFilterStatus("all");
-                  setFilterPriority("all");
-                }}
-                className="w-full"
-              >
-                Clear Filters
-              </Button>
-            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tickets Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Tickets ({tickets.length})</CardTitle>
-          <CardDescription>
-            Complete list of support tickets with current status and details
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center h-32 bg-red-50 rounded-md border border-red-200 p-4">
-              <p className="text-red-600 font-medium mb-2">Failed to load tickets</p>
-              <p className="text-red-500 text-sm mb-3">{error}</p>
+      {/* Error Message */}
+      {error && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center text-red-500">
+              <p>{error}</p>
               {isDatabaseError(error) && (
-                <div className="text-center mb-3">
-                  <p className="text-sm text-muted-foreground">
-                    This might be a database connection issue. Please check:
-                  </p>
-                  <ul className="text-xs text-muted-foreground list-disc list-inside mt-1">
-                    <li>If the backend server is running</li>
-                    <li>If database credentials are correct</li>
-                  </ul>
-                </div>
+                <p className="mt-2 text-sm">
+                  Please check your database connection and try again.
+                </p>
               )}
-              <Button onClick={fetchTickets} variant="outline" size="sm">
-                Retry
-              </Button>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Ticket ID</TableHead>
-                  <TableHead>Serial Number</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Contact Person</TableHead>
-                  <TableHead>Issue Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Assigned To</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tickets.length > 0 ? (
-                  tickets.map((ticket) => (
-                    <TableRow 
-                      key={ticket.id}
-                      className="hover:bg-muted/50 cursor-pointer"
-                    >
-                      <TableCell className="font-medium">
-                        <NavLink 
-                          to={`/tickets/${ticket.id}`}
-                          className="text-primary hover:underline"
-                        >
-                          {ticket.ticket_number || ticket.ticketNumber || `TICKET-${ticket.id}`}
-                        </NavLink>
-                      </TableCell>
-                      <TableCell>{ticket.serial_number || ticket.serialNumber || 'N/A'}</TableCell>
-                      <TableCell className="text-foreground">{ticket.company_name || ticket.companyName || 'N/A'}</TableCell>
-                      <TableCell className="text-foreground">{ticket.contact_person || ticket.contactPerson || 'N/A'}</TableCell>
-                      <TableCell>{getIssueTypeLabel(ticket.issue_related || ticket.issueRelated || 'N/A')}</TableCell>
-                      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                      <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                      <TableCell className="text-foreground">{ticket.assigned_executive || ticket.assignedExecutive || 'Unassigned'}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatToDubaiTime(ticket.created_at || ticket.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <NavLink to={`/tickets/${ticket.id}`}>View Details</NavLink>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <NavLink to={`/tickets/${ticket.id}/edit`}>Edit Ticket</NavLink>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>Assign to Me</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Close Ticket
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      )}
+
+      {/* Tickets Table */}
+      {!loading && !error && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {serialNumberSearch 
+                ? `Tickets for Serial: ${serialNumberSearch}` 
+                : "All Tickets"}
+              <span className="text-sm font-normal text-muted-foreground ml-2">
+                ({tickets.length} tickets)
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {tickets.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  {serialNumberSearch 
+                    ? `No tickets found for serial number ${serialNumberSearch}` 
+                    : "No tickets found matching your search criteria"}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Ticket Number</TableHead>
+                      <TableHead>Serial Number</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Issue Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                      No tickets found. Try adjusting your search or filters.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {tickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell className="font-medium">
+                          {ticket.ticket_number || ticket.ticketNumber}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.serial_number || ticket.serialNumber}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.company_name || ticket.companyName}
+                        </TableCell>
+                        <TableCell>
+                          {ticket.contact_person || ticket.contactPerson}
+                        </TableCell>
+                        <TableCell>
+                          {getIssueTypeLabel(ticket.issue_related || ticket.issueRelated)}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(ticket.status)}
+                        </TableCell>
+                        <TableCell>
+                          {getPriorityBadge(ticket.priority)}
+                        </TableCell>
+                        <TableCell>
+                          {formatToDubaiTime(ticket.created_at || ticket.createdAt)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => navigate(`/tickets/${ticket.id}`)}>
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => navigate(`/tickets/${ticket.id}/edit`)}>
+                                Edit
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

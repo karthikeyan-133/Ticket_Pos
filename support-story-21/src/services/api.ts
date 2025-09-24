@@ -99,22 +99,53 @@ export const ticketAPI = {
     }
   },
   
-  // Get tickets by serial number
+  // Get tickets by serial number (latest ticket for customer details)
   getBySerialNumber: async (serialNumber: string) => {
     try {
-      const response = await apiClient.get(`/tickets/serial/${serialNumber}`);
+      // Validate serial number format
+      const cleanSerialNumber = serialNumber.replace(/\D/g, '').slice(0, 9);
+      if (cleanSerialNumber.length !== 9) {
+        throw new Error('Tally serial number must be exactly 9 digits');
+      }
+      
+      const response = await apiClient.get(`/tickets/serial/${cleanSerialNumber}`);
       return response.data;
     } catch (error) {
       handleApiError(error, `fetching tickets for serial ${serialNumber}`);
     }
   },
   
+  // Get resolution history by serial number
+  getResolutionHistory: async (serialNumber: string) => {
+    try {
+      // Validate serial number format
+      const cleanSerialNumber = serialNumber.replace(/\D/g, '').slice(0, 9);
+      if (cleanSerialNumber.length !== 9) {
+        throw new Error('Tally serial number must be exactly 9 digits');
+      }
+      
+      const response = await apiClient.get(`/tickets/resolution-history/${cleanSerialNumber}`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error, `fetching resolution history for serial ${serialNumber}`);
+    }
+  },
+  
   // Create new ticket
   create: async (data: any) => {
     try {
+      // Validate serial number format
+      if (data.serialNumber) {
+        const cleanSerialNumber = data.serialNumber.replace(/\D/g, '').slice(0, 9);
+        if (cleanSerialNumber.length !== 9) {
+          throw new Error('Tally serial number must be exactly 9 digits');
+        }
+        data.serialNumber = cleanSerialNumber;
+      }
+      
       // Normalize field names to match backend expectations
       const normalizedData = {
-        ticketNumber: data.ticketNumber,
+        ticketNumber: data.ticketNumber || undefined, // Allow undefined to trigger auto-generation
         serialNumber: data.serialNumber,
         companyName: data.companyName,
         contactPerson: data.contactPerson,
@@ -140,6 +171,15 @@ export const ticketAPI = {
   // Update ticket
   update: async (id: string, data: any) => {
     try {
+      // Validate serial number format if provided
+      if (data.serialNumber) {
+        const cleanSerialNumber = data.serialNumber.replace(/\D/g, '').slice(0, 9);
+        if (cleanSerialNumber.length !== 9) {
+          throw new Error('Tally serial number must be exactly 9 digits');
+        }
+        data.serialNumber = cleanSerialNumber;
+      }
+      
       // Normalize field names to match backend expectations
       const normalizedData = {
         ticketNumber: data.ticketNumber,
@@ -168,12 +208,22 @@ export const ticketAPI = {
   // Delete ticket
   delete: async (id: string) => {
     try {
-      const response = await apiClient.delete(`/tickets/${id}`);
-      return response.data;
+      await apiClient.delete(`/tickets/${id}`);
     } catch (error) {
       handleApiError(error, `deleting ticket ${id}`);
     }
   },
+  
+  // Search tickets
+  search: async (query: string, filters?: any) => {
+    try {
+      const params: any = { search: query, ...filters };
+      const response = await apiClient.get('/tickets', { params });
+      return response.data;
+    } catch (error) {
+      handleApiError(error, 'searching tickets');
+    }
+  }
 };
 
 // Executive API endpoints
@@ -185,6 +235,16 @@ export const executiveAPI = {
       return response.data;
     } catch (error) {
       handleApiError(error, 'fetching executives');
+    }
+  },
+  
+  // Get executive by ID
+  getById: async (id: string) => {
+    try {
+      const response = await apiClient.get(`/executives/${id}`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error, `fetching executive ${id}`);
     }
   },
   
@@ -211,12 +271,61 @@ export const executiveAPI = {
   // Delete executive
   delete: async (id: string) => {
     try {
-      const response = await apiClient.delete(`/executives/${id}`);
-      return response.data;
+      await apiClient.delete(`/executives/${id}`);
     } catch (error) {
       handleApiError(error, `deleting executive ${id}`);
     }
-  },
+  }
 };
 
-export default { ticketAPI, executiveAPI };
+// Sale API endpoints
+export const saleAPI = {
+  // Get all sales
+  getAll: async () => {
+    try {
+      const response = await apiClient.get('/sales');
+      return response.data;
+    } catch (error) {
+      handleApiError(error, 'fetching sales');
+    }
+  },
+  
+  // Get sale by ID
+  getById: async (id: string) => {
+    try {
+      const response = await apiClient.get(`/sales/${id}`);
+      return response.data;
+    } catch (error) {
+      handleApiError(error, `fetching sale ${id}`);
+    }
+  },
+  
+  // Create new sale
+  create: async (data: any) => {
+    try {
+      const response = await apiClient.post('/sales', data);
+      return response.data;
+    } catch (error) {
+      handleApiError(error, 'creating sale');
+    }
+  },
+  
+  // Update sale
+  update: async (id: string, data: any) => {
+    try {
+      const response = await apiClient.put(`/sales/${id}`, data);
+      return response.data;
+    } catch (error) {
+      handleApiError(error, `updating sale ${id}`);
+    }
+  },
+  
+  // Delete sale
+  delete: async (id: string) => {
+    try {
+      await apiClient.delete(`/sales/${id}`);
+    } catch (error) {
+      handleApiError(error, `deleting sale ${id}`);
+    }
+  }
+};

@@ -8,9 +8,30 @@ const generateTicketNumber = () => {
   return `TICKET/${year}/${randomNumber}`;
 };
 
+// Validate Tally serial number (must be exactly 9 digits)
+const validateSerialNumber = (serialNumber) => {
+  if (!serialNumber) {
+    throw new Error('Tally serial number is required');
+  }
+  
+  // Remove any spaces or special characters
+  const cleanSerialNumber = serialNumber.toString().replace(/\D/g, '');
+  
+  if (cleanSerialNumber.length !== 9) {
+    throw new Error('Tally serial number must be exactly 9 digits');
+  }
+  
+  if (!/^\d{9}$/.test(cleanSerialNumber)) {
+    throw new Error('Tally serial number must contain only digits');
+  }
+  
+  return cleanSerialNumber;
+};
+
 class Ticket {
   constructor(data) {
     this.id = data.id;
+    // Only generate ticket number if not provided
     this.ticketNumber = data.ticket_number || data.ticketNumber || generateTicketNumber();
     this.serialNumber = data.serial_number || data.serialNumber;
     this.companyName = data.company_name || data.companyName;
@@ -35,12 +56,15 @@ class Ticket {
     // Use injected supabase client if available, otherwise use the imported one
     const client = Ticket.supabase || supabase;
     
+    // Validate serial number before saving
+    const validatedSerialNumber = validateSerialNumber(this.serialNumber);
+    
     const { data, error } = await client
       .from('tickets')
       .insert([
         {
           ticket_number: this.ticketNumber,
-          serial_number: this.serialNumber,
+          serial_number: validatedSerialNumber,
           company_name: this.companyName,
           contact_person: this.contactPerson,
           mobile_number: this.mobileNumber,
@@ -92,7 +116,9 @@ class Ticket {
 
     // Apply filters
     if (filter.serialNumber) {
-      query = query.eq('serial_number', filter.serialNumber);
+      // Validate serial number format
+      const validatedSerialNumber = validateSerialNumber(filter.serialNumber);
+      query = query.eq('serial_number', validatedSerialNumber);
     }
 
     // Handle search parameter
@@ -117,6 +143,10 @@ class Ticket {
 
     // Sort by creation date (newest first)
     query = query.order('created_at', { ascending: false });
+    
+    // Remove the default limit of 1000 records by setting a very large limit
+    // This ensures all tickets are displayed
+    query = query.limit(100000);
 
     const { data, error } = await query;
 
@@ -180,112 +210,150 @@ class Ticket {
     return new Ticket(ticketData);
   }
 
-  // Remove ticket by ID
-  static async removeById(id) {
+  // Update an existing ticket
+  async update() {
     // Use injected supabase client if available, otherwise use the imported one
     const client = Ticket.supabase || supabase;
+    
+    // Validate serial number before updating
+    const validatedSerialNumber = validateSerialNumber(this.serialNumber);
     
     const { data, error } = await client
       .from('tickets')
-      .delete()
-      .eq('id', id)
-      .select();
-
-    if (error) {
-      throw new Error(`Error deleting ticket: ${error.message}`);
-    }
-
-    return data.length > 0 ? { message: 'Ticket deleted' } : null;
-  }
-
-  // Update ticket by ID
-  static async updateById(id, data) {
-    // Use injected supabase client if available, otherwise use the imported one
-    const client = Ticket.supabase || supabase;
-    
-    // Convert camelCase to snake_case for Supabase
-    const updateData = { 
-      ...data,
-      ticket_number: data.ticketNumber !== undefined ? data.ticketNumber : data.ticket_number,
-      serial_number: data.serialNumber !== undefined ? data.serialNumber : data.serial_number,
-      company_name: data.companyName !== undefined ? data.companyName : data.company_name,
-      contact_person: data.contactPerson !== undefined ? data.contactPerson : data.contact_person,
-      mobile_number: data.mobileNumber !== undefined ? data.mobileNumber : data.mobile_number,
-      issue_related: data.issueRelated !== undefined ? data.issueRelated : data.issue_related,
-      assigned_executive: data.assignedExecutive !== undefined ? data.assignedExecutive : data.assigned_executive,
-      user_type: data.userType !== undefined ? data.userType : data.user_type,
-      expiry_date: data.expiryDate !== undefined ? data.expiryDate : data.expiry_date,
-      updated_at: data.updatedAt || data.updated_at || new Date().toISOString(),
-      closed_at: data.closedAt !== undefined ? data.closedAt : data.closed_at
-    };
-    
-    // Remove camelCase properties that we've converted
-    delete updateData.ticketNumber;
-    delete updateData.serialNumber;
-    delete updateData.companyName;
-    delete updateData.contactPerson;
-    delete updateData.mobileNumber;
-    delete updateData.issueRelated;
-    delete updateData.assignedExecutive;
-    delete updateData.userType;
-    delete updateData.expiryDate;
-    delete updateData.createdAt;
-    delete updateData.updatedAt;
-    delete updateData.closedAt;
-
-    // Check if status is changing to closed
-    let isClosing = false;
-    if (data.status === 'closed') {
-      const existingTicket = await this.findById(id);
-      if (existingTicket && existingTicket.status !== 'closed') {
-        isClosing = true;
-        updateData.closed_at = new Date().toISOString();
-      }
-    }
-
-    const { data: updatedData, error } = await client
-      .from('tickets')
-      .update(updateData)
-      .eq('id', id)
+      .update({
+        ticket_number: this.ticketNumber,
+        serial_number: validatedSerialNumber,
+        company_name: this.companyName,
+        contact_person: this.contactPerson,
+        mobile_number: this.mobileNumber,
+        email: this.email,
+        issue_related: this.issueRelated,
+        priority: this.priority,
+        assigned_executive: this.assignedExecutive,
+        status: this.status,
+        user_type: this.userType,
+        expiry_date: this.expiryDate,
+        updated_at: new Date(),
+        closed_at: this.closedAt,
+        resolution: this.resolution,
+        remarks: this.remarks
+      })
+      .eq('id', this.id)
       .select();
 
     if (error) {
       throw new Error(`Error updating ticket: ${error.message}`);
     }
 
-    if (updatedData.length === 0) {
-      return null;
+    // Convert snake_case to camelCase for the response
+    const ticketData = {
+      ...data[0],
+      ticketNumber: data[0].ticket_number,
+      serialNumber: data[0].serial_number,
+      companyName: data[0].company_name,
+      contactPerson: data[0].contact_person,
+      mobileNumber: data[0].mobile_number,
+      issueRelated: data[0].issue_related,
+      assignedExecutive: data[0].assigned_executive,
+      userType: data[0].user_type,
+      expiryDate: data[0].expiry_date,
+      createdAt: data[0].created_at,
+      updatedAt: data[0].updated_at,
+      closedAt: data[0].closed_at
+    };
+    return new Ticket(ticketData);
+  }
+
+  // Delete a ticket
+  static async delete(id) {
+    // Use injected supabase client if available, otherwise use the imported one
+    const client = Ticket.supabase || supabase;
+    
+    const { error } = await client
+      .from('tickets')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Error deleting ticket: ${error.message}`);
+    }
+    
+    return true;
+  }
+
+  // Find ticket by ticket number
+  static async findByTicketNumber(ticketNumber) {
+    // Use injected supabase client if available, otherwise use the imported one
+    const client = Ticket.supabase || supabase;
+    
+    const { data, error } = await client
+      .from('tickets')
+      .select('*')
+      .eq('ticket_number', ticketNumber)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null;
+      }
+      throw new Error(`Error fetching ticket: ${error.message}`);
     }
 
     // Convert snake_case to camelCase for the response
     const ticketData = {
-      ...updatedData[0],
-      ticketNumber: updatedData[0].ticket_number,
-      serialNumber: updatedData[0].serial_number,
-      companyName: updatedData[0].company_name,
-      contactPerson: updatedData[0].contact_person,
-      mobileNumber: updatedData[0].mobile_number,
-      issueRelated: updatedData[0].issue_related,
-      assignedExecutive: updatedData[0].assigned_executive,
-      userType: updatedData[0].user_type,
-      expiryDate: updatedData[0].expiry_date,
-      createdAt: updatedData[0].created_at,
-      updatedAt: updatedData[0].updated_at,
-      closedAt: updatedData[0].closed_at
+      ...data,
+      ticketNumber: data.ticket_number,
+      serialNumber: data.serial_number,
+      companyName: data.company_name,
+      contactPerson: data.contact_person,
+      mobileNumber: data.mobile_number,
+      issueRelated: data.issue_related,
+      assignedExecutive: data.assigned_executive,
+      userType: data.user_type,
+      expiryDate: data.expiry_date,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      closedAt: data.closed_at
     };
+    return new Ticket(ticketData);
+  }
 
-    // If closing, send notification
-    if (isClosing) {
-      console.log(`Ticket ${ticketData.ticketNumber} has been closed, sending notification...`);
-      try {
-        await sendTicketClosedNotifications(ticketData);
-        console.log(`Notification sent for ticket ${ticketData.ticketNumber}`);
-      } catch (error) {
-        console.error(`Error sending notification for ticket ${ticketData.ticketNumber}:`, error);
-      }
+  // Get resolution history by serial number
+  static async getResolutionHistory(serialNumber) {
+    // Use injected supabase client if available, otherwise use the imported one
+    const client = Ticket.supabase || supabase;
+    
+    // Validate serial number format
+    const validatedSerialNumber = validateSerialNumber(serialNumber);
+    
+    // Get all tickets for this serial number, sorted by creation date
+    const { data, error } = await client
+      .from('tickets')
+      .select('*')
+      .eq('serial_number', validatedSerialNumber)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error(`Error fetching resolution history: ${error.message}`);
     }
 
-    return new Ticket(ticketData);
+    // Convert snake_case to camelCase for each ticket
+    return data.map(ticket => new Ticket({
+      ...ticket,
+      ticketNumber: ticket.ticket_number,
+      serialNumber: ticket.serial_number,
+      companyName: ticket.company_name,
+      contactPerson: ticket.contact_person,
+      mobileNumber: ticket.mobile_number,
+      issueRelated: ticket.issue_related,
+      assignedExecutive: ticket.assigned_executive,
+      userType: ticket.user_type,
+      expiryDate: ticket.expiry_date,
+      createdAt: ticket.created_at,
+      updatedAt: ticket.updated_at,
+      closedAt: ticket.closed_at
+    }));
   }
 }
 

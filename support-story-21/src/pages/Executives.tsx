@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Plus, Mail, Phone, MoreHorizontal } from "lucide-react";
+import { Search, Plus, Mail, Phone, MoreHorizontal, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 import { executiveAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
 import { ExecutiveForm } from "@/components/executives/ExecutiveForm";
+import ExportToExcel from "@/components/ExportToExcel";
 
 // Define the executive data structure
 interface Executive {
@@ -38,7 +39,9 @@ const Executives = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedExecutive, setSelectedExecutive] = useState<Executive | null>(null);
 
   // Validate executive data format
   const validateExecutiveData = (exec: any): exec is Executive => {
@@ -188,6 +191,82 @@ const Executives = () => {
     }
   };
 
+  // Handle form submission for editing an executive
+  const handleEditExecutive = async (data: any) => {
+    try {
+      if (!selectedExecutive) return;
+      
+      setIsSubmitting(true);
+      // Ensure data is in the correct format for the backend
+      const executiveData = {
+        name: data.name,
+        email: data.email,
+        mobile: data.mobile || '',
+        department: data.department || '',
+        // Send both formats for compatibility
+        is_active: data.is_active !== undefined ? data.is_active : (data.isActive !== undefined ? data.isActive : true),
+        isActive: data.is_active !== undefined ? data.is_active : (data.isActive !== undefined ? data.isActive : true)
+      };
+      
+      await executiveAPI.update(selectedExecutive.id.toString(), executiveData);
+      toast({
+        title: "Success",
+        description: "Executive updated successfully",
+      });
+      setIsEditDialogOpen(false);
+      setSelectedExecutive(null);
+      fetchExecutives(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error updating executive:", error);
+      let errorMessage = 'Failed to update executive. Please try again.';
+      
+      if (error.message) {
+        if (error.message.includes('Network Error') || error.message.includes('ECONNREFUSED')) {
+          errorMessage = 'Unable to connect to the server. Please check if the backend is running.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle deleting an executive
+  const handleDeleteExecutive = async (executive: Executive) => {
+    try {
+      await executiveAPI.delete(executive.id.toString());
+      toast({
+        title: "Success",
+        description: "Executive deleted successfully",
+      });
+      fetchExecutives(); // Refresh the list
+    } catch (error: any) {
+      console.error("Error deleting executive:", error);
+      let errorMessage = 'Failed to delete executive. Please try again.';
+      
+      if (error.message) {
+        if (error.message.includes('Network Error') || error.message.includes('ECONNREFUSED')) {
+          errorMessage = 'Unable to connect to the server. Please check if the backend is running.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Fetch executives on component mount
   useEffect(() => {
     fetchExecutives();
@@ -216,6 +295,15 @@ const Executives = () => {
            errorMessage.includes('database') ||
            errorMessage.includes('Network error');
   };
+
+  // Define export columns
+  const exportColumns = [
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'mobile', label: 'Mobile' },
+    { key: 'department', label: 'Department' },
+    { key: 'is_active', label: 'Active Status' }
+  ];
 
   if (loading) {
     return (
@@ -267,6 +355,26 @@ const Executives = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Executive Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+        setIsEditDialogOpen(open);
+        if (!open) setSelectedExecutive(null);
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Executive</DialogTitle>
+          </DialogHeader>
+          {selectedExecutive && (
+            <ExecutiveForm 
+              initialData={selectedExecutive}
+              onSubmit={handleEditExecutive} 
+              isLoading={isSubmitting}
+              submitButtonText="Update Executive"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -276,6 +384,11 @@ const Executives = () => {
           </p>
         </div>
         <div className="flex space-x-2">
+          <ExportToExcel 
+            data={executives} 
+            filename="support-executives" 
+            columns={exportColumns} 
+          />
           <Button variant="outline" onClick={fetchExecutives}>
             Refresh
           </Button>
@@ -389,10 +502,18 @@ const Executives = () => {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>View Profile</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Details</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedExecutive(executive);
+                          setIsEditDialogOpen(true);
+                        }}>
+                          Edit Details
+                        </DropdownMenuItem>
                         <DropdownMenuItem>View Tickets</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          Deactivate
+                        <DropdownMenuItem 
+                          className="text-destructive"
+                          onClick={() => handleDeleteExecutive(executive)}
+                        >
+                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

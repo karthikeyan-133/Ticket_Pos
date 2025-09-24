@@ -53,10 +53,15 @@ class Executive {
     // Use injected supabase client if available, otherwise use the imported one
     const client = Executive.supabase || supabase;
     
-    const { data, error } = await client
-      .from('executives')
-      .select('*')
-      .order('name', { ascending: true });
+    let query = client.from('executives').select('*');
+    
+    // Sort by name
+    query = query.order('name', { ascending: true });
+    
+    // Remove the default limit of 1000 records
+    query = query.limit(10000);
+
+    const { data, error } = await query;
 
     if (error) {
       throw new Error(`Error fetching executives: ${error.message}`);

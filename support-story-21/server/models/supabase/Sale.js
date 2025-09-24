@@ -94,6 +94,9 @@ class Sale {
 
     // Sort by creation date (newest first)
     query = query.order('created_at', { ascending: false });
+    
+    // Remove the default limit of 1000 records
+    query = query.limit(10000);
 
     const { data, error } = await query;
 

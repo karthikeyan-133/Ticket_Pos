@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
-import { TicketForm } from "@/components/tickets/TicketForm";
+import TicketForm from "@/components/tickets/TicketForm";
 import { ticketAPI } from "@/services/api";
 import { Button } from "@/components/ui/button";
 

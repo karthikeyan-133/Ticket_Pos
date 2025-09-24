@@ -1,671 +1,419 @@
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { toast } from "@/components/ui/use-toast";
-import { executiveAPI, ticketAPI } from "@/services/api";
-
-// Define the form schema with Zod
-const ticketFormSchema = z.object({
-  serialNumber: z
-    .string()
-    .min(9, "Serial number must be exactly 9 digits")
-    .max(9, "Serial number must be exactly 9 digits")
-    .regex(/^\d+$/, "Serial number must contain only digits"),
-  companyName: z.string().min(1, "Company name is required"),
-  contactPerson: z.string().min(1, "Contact person is required"),
-  mobileNumber: z
-    .string()
-    .min(10, "Mobile number must be at least 10 digits")
-    .regex(/^\d+$/, "Mobile number must contain only digits"),
-  email: z.string().email("Invalid email address"),
-  issueRelated: z.enum(["data", "network", "licence", "entry"]),
-  priority: z.enum(["high", "medium", "low"]),
-  assignedExecutive: z.string().min(1, "Please assign to an executive"),
-  status: z.enum(["open", "closed", "processing", "on hold"]),
-  userType: z.enum(["single user", "multiuser"]),
-  expiryDate: z.date({
-    required_error: "Expiry date is required",
-  }),
-  resolution: z.string().optional(),
-  remarks: z.string().optional(),
-});
-
-type TicketFormValues = z.infer<typeof ticketFormSchema>;
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle, Loader2 } from "lucide-react";
+import { ticketAPI } from "@/services/api";
 
 interface TicketFormProps {
-  initialData?: Partial<TicketFormValues>;
-  onSubmit: (data: TicketFormValues) => void;
-  isLoading: boolean;
+  initialData?: any;
+  onSubmit: (data: any) => void;
+  isLoading?: boolean;
   submitButtonText?: string;
+  onSerialNumberChange?: (serialNumber: string) => void;
 }
 
-export function TicketForm({ 
-  initialData, 
-  onSubmit, 
-  isLoading,
-  submitButtonText = "Submit"
-}: TicketFormProps) {
-  const [executives, setExecutives] = useState<any[]>([]);
-  const [loadingExecutives, setLoadingExecutives] = useState(true);
-  const [previousCompanyName, setPreviousCompanyName] = useState("");
-  const [isCheckingSerial, setIsCheckingSerial] = useState(false);
-  const [autoPopulatedFields, setAutoPopulatedFields] = useState(false);
-
-  // Fetch executives
-  const fetchExecutives = async () => {
-    try {
-      setLoadingExecutives(true);
-      const response = await executiveAPI.getAll();
-      setExecutives(response);
-    } catch (error) {
-      console.error("Error fetching executives:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch executives. Using default list.",
-        variant: "destructive",
-      });
-      // Fallback to default executives
-      setExecutives([
-        { name: "John Smith" },
-        { name: "Sarah Johnson" },
-        { name: "Mike Wilson" },
-        { name: "Anna Davis" },
-        { name: "Robert Brown" },
-      ]);
-    } finally {
-      setLoadingExecutives(false);
-    }
-  };
-
-  // Load executives on component mount
-  useEffect(() => {
-    fetchExecutives();
-  }, []);
-
-  // Initialize form with react-hook-form and zod validation
-  const form = useForm<TicketFormValues>({
-    resolver: zodResolver(ticketFormSchema),
-    defaultValues: {
-      serialNumber: initialData?.serialNumber || "",
-      companyName: initialData?.companyName || "",
-      contactPerson: initialData?.contactPerson || "",
-      mobileNumber: initialData?.mobileNumber || "",
-      email: initialData?.email || "",
-      issueRelated: (initialData?.issueRelated as "data" | "network" | "licence" | "entry") || "data",
-      priority: (initialData?.priority as "high" | "medium" | "low") || "medium",
-      assignedExecutive: initialData?.assignedExecutive || "",
-      status: (initialData?.status as "open" | "closed" | "processing" | "on hold") || "open",
-      userType: (initialData?.userType as "single user" | "multiuser") || "single user",
-      expiryDate: initialData?.expiryDate ? new Date(initialData.expiryDate) : undefined,
-      resolution: initialData?.resolution || "",
-      remarks: initialData?.remarks || "",
-    },
+const TicketForm = ({ initialData, onSubmit, isLoading, submitButtonText = "Save Ticket", onSerialNumberChange }: TicketFormProps) => {
+  const [formData, setFormData] = useState({
+    ticketNumber: initialData?.ticketNumber || "",
+    serialNumber: initialData?.serialNumber || "",
+    companyName: initialData?.companyName || "",
+    contactPerson: initialData?.contactPerson || "",
+    mobileNumber: initialData?.mobileNumber || "",
+    email: initialData?.email || "",
+    issueRelated: initialData?.issueRelated || "data",
+    priority: initialData?.priority || "medium",
+    assignedExecutive: initialData?.assignedExecutive || "",
+    status: initialData?.status || "open",
+    userType: initialData?.userType || "single user",
+    expiryDate: initialData?.expiryDate || "",
+    resolution: initialData?.resolution || "",
+    remarks: initialData?.remarks || ""
   });
 
-  // Function to check for existing tickets with the same serial number
-  const checkSerialNumber = async (serialNumber: string) => {
-    if (!serialNumber || serialNumber.length !== 9) return;
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [serialNumberError, setSerialNumberError] = useState("");
+  const [isFetchingSerialData, setIsFetchingSerialData] = useState(false);
+
+  // Handle input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
     
-    setIsCheckingSerial(true);
-    try {
-      const tickets = await ticketAPI.getBySerialNumber(serialNumber);
-      if (tickets && tickets.length > 0) {
-        // Get the most recent ticket (tickets are ordered by date, so first one is latest)
-        const latestTicket = tickets[0];
-        
-        // Extract values with support for both camelCase and snake_case
-        const companyName = latestTicket.companyName || latestTicket.company_name || '';
-        const contactPerson = latestTicket.contactPerson || latestTicket.contact_person || '';
-        const mobileNumber = latestTicket.mobileNumber || latestTicket.mobile_number || '';
-        const email = latestTicket.email || '';
-        const userType = latestTicket.userType || latestTicket.user_type || '';
-        const assignedExecutive = latestTicket.assignedExecutive || latestTicket.assigned_executive || '';
-        const issueRelated = latestTicket.issueRelated || latestTicket.issue_related || 'data';
-        const priority = latestTicket.priority || 'medium';
-        const status = latestTicket.status || 'open';
-        const expiryDate = latestTicket.expiryDate || latestTicket.expiry_date || '';
-        
-        // Track if any fields were populated
-        let hasPopulatedFields = false;
-        
-        // Populate form fields with data from the previous ticket
-        if (companyName) {
-          form.setValue("companyName", companyName);
-          setPreviousCompanyName(companyName);
-          hasPopulatedFields = true;
-        }
-        
-        if (contactPerson) {
-          form.setValue("contactPerson", contactPerson);
-          hasPopulatedFields = true;
-        }
-        
-        if (mobileNumber) {
-          form.setValue("mobileNumber", mobileNumber);
-          hasPopulatedFields = true;
-        }
-        
-        if (email) {
-          form.setValue("email", email);
-          hasPopulatedFields = true;
-        }
-        
-        if (userType) {
-          form.setValue("userType", userType as "single user" | "multiuser");
-          hasPopulatedFields = true;
-        }
-        
-        if (assignedExecutive) {
-          form.setValue("assignedExecutive", assignedExecutive);
-          hasPopulatedFields = true;
-        }
-        
-        if (issueRelated) {
-          form.setValue("issueRelated", issueRelated as "data" | "network" | "licence" | "entry");
-          hasPopulatedFields = true;
-        }
-        
-        if (priority) {
-          form.setValue("priority", priority as "high" | "medium" | "low");
-          hasPopulatedFields = true;
-        }
-        
-        if (status) {
-          form.setValue("status", status as "open" | "closed" | "processing" | "on hold");
-          hasPopulatedFields = true;
-        }
-        
-        // Handle expiry date (convert string to Date object)
-        if (expiryDate) {
-          const dateObj = new Date(expiryDate);
-          if (!isNaN(dateObj.getTime())) {
-            form.setValue("expiryDate", dateObj);
-            hasPopulatedFields = true;
-          }
-        }
-        
-        // Set auto-populated state if any fields were populated
-        if (hasPopulatedFields) {
-          setAutoPopulatedFields(true);
-          toast({
-            title: "Previous Ticket Data Found",
-            description: `Customer information automatically populated from previous ticket with the same serial number.`,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error checking serial number:", error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch previous ticket data.",
-        variant: "destructive",
+    // Clear error when user types
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
       });
-    } finally {
-      setIsCheckingSerial(false);
+    }
+    
+    // Special handling for serial number
+    if (name === "serialNumber") {
+      handleSerialNumberChange(value);
     }
   };
 
-  // Watch for changes to the serial number field
-  const serialNumberValue = form.watch("serialNumber");
-  
-  useEffect(() => {
-    // Only check if we have a complete serial number and it's different from what we've already checked
-    if (serialNumberValue && serialNumberValue.length === 9 && serialNumberValue !== initialData?.serialNumber) {
-      const timeoutId = setTimeout(() => {
-        checkSerialNumber(serialNumberValue);
-      }, 500); // Debounce the API call
-      
-      return () => clearTimeout(timeoutId);
-    } else if (serialNumberValue !== initialData?.serialNumber) {
-      // Reset auto-populated fields state when serial number is changed to something invalid
-      setAutoPopulatedFields(false);
-      setPreviousCompanyName("");
+  // Handle serial number input with validation
+  const handleSerialNumberChange = (value: string) => {
+    // Remove any non-digit characters
+    const cleanValue = value.replace(/\D/g, "");
+    
+    // Limit to 9 digits
+    const limitedValue = cleanValue.slice(0, 9);
+    
+    setFormData(prev => ({ ...prev, serialNumber: limitedValue }));
+    
+    // Validate length
+    if (limitedValue.length > 0 && limitedValue.length !== 9) {
+      setSerialNumberError("Tally serial number must be exactly 9 digits");
+    } else {
+      setSerialNumberError("");
     }
-  }, [serialNumberValue]);
+    
+    // Clear general error for serialNumber field
+    if (errors.serialNumber) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.serialNumber;
+        return newErrors;
+      });
+    }
+    
+    // Notify parent component of serial number change
+    if (onSerialNumberChange) {
+      onSerialNumberChange(limitedValue);
+    }
+    
+    // Auto-fetch customer details when serial number is complete
+    if (limitedValue.length === 9) {
+      fetchCustomerDetails(limitedValue);
+    }
+  };
 
-  // Validate serial number (sum of digits reduces to 9)
-  const validateSerialNumber = (serial: string): boolean => {
-    if (serial.length !== 9 || !/^\d+$/.test(serial)) return false;
+  // Fetch customer details based on serial number
+  const fetchCustomerDetails = async (serialNumber: string) => {
+    if (!serialNumber || serialNumber.length !== 9) return;
     
-    let sum = serial
-      .split("")
-      .reduce((acc, digit) => acc + parseInt(digit), 0);
-      
-    while (sum > 9) {
-      sum = sum
-        .toString()
-        .split("")
-        .reduce((acc, digit) => acc + parseInt(digit), 0);
+    setIsFetchingSerialData(true);
+    try {
+      const data = await ticketAPI.getBySerialNumber(serialNumber);
+      // Only populate customer details if this is a new ticket (no initialData)
+      if (!initialData && data && Object.keys(data).length > 0) {
+        setFormData(prev => ({
+          ...prev,
+          companyName: data.company_name || data.companyName || prev.companyName,
+          contactPerson: data.contact_person || data.contactPerson || prev.contactPerson,
+          mobileNumber: data.mobile_number || data.mobileNumber || prev.mobileNumber,
+          email: data.email || prev.email,
+          userType: data.user_type || data.userType || prev.userType,
+          expiryDate: data.expiry_date || data.expiryDate || prev.expiryDate,
+          assignedExecutive: data.assigned_executive || data.assignedExecutive || prev.assignedExecutive
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching customer details:", error);
+    } finally {
+      setIsFetchingSerialData(false);
     }
+  };
+
+  // Handle select changes
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
     
-    return sum === 9;
+    // Clear error when user selects
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   // Handle form submission
-  const handleSubmit = (data: TicketFormValues) => {
-    // Validate serial number
-    if (!validateSerialNumber(data.serialNumber)) {
-      toast({
-        title: "Invalid Serial Number",
-        description: "The sum of the serial's digits must reduce to 9.",
-        variant: "destructive",
-      });
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate form
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.serialNumber) {
+      newErrors.serialNumber = "Tally serial number is required";
+    } else if (formData.serialNumber.length !== 9) {
+      newErrors.serialNumber = "Tally serial number must be exactly 9 digits";
+    }
+    
+    if (!formData.companyName.trim()) {
+      newErrors.companyName = "Company name is required";
+    }
+    
+    if (!formData.contactPerson.trim()) {
+      newErrors.contactPerson = "Contact person is required";
+    }
+    
+    if (!formData.mobileNumber.trim()) {
+      newErrors.mobileNumber = "Mobile number is required";
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Email is invalid";
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
     
-    onSubmit(data);
+    // If we have a serial number error, don't submit
+    if (serialNumberError) {
+      return;
+    }
+    
+    onSubmit(formData);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Tally Serial Number */}
-          <FormField
-            control={form.control}
-            name="serialNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tally Serial Number *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Enter 9-digit serial number" 
-                    {...field}
-                    maxLength={9}
-                  />
-                </FormControl>
-                <FormDescription>
-                  Must be 9 digits with digits sum reducing to 9
-                  {isCheckingSerial && <span className="ml-2 text-primary">Checking...</span>}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {serialNumberError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{serialNumberError}</AlertDescription>
+        </Alert>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Serial Number */}
+        <div className="space-y-2">
+          <Label htmlFor="serialNumber">Tally Serial Number *</Label>
+          <div className="relative">
+            <Input
+              id="serialNumber"
+              name="serialNumber"
+              value={formData.serialNumber}
+              onChange={(e) => handleSerialNumberChange(e.target.value)}
+              placeholder="Enter 9-digit serial number"
+              maxLength={9}
+              className={errors.serialNumber ? "border-red-500" : ""}
+            />
+            {isFetchingSerialData && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
             )}
-          />
-
-          {/* Company Name */}
-          <FormField
-            control={form.control}
+          </div>
+          {errors.serialNumber && (
+            <p className="text-sm text-red-500">{errors.serialNumber}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Must be exactly 9 digits
+          </p>
+        </div>
+        
+        {/* Company Name */}
+        <div className="space-y-2">
+          <Label htmlFor="companyName">Company Name *</Label>
+          <Input
+            id="companyName"
             name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Name *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Enter company name" 
-                    {...field}
-                  />
-                </FormControl>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            value={formData.companyName}
+            onChange={handleChange}
+            placeholder="Enter company name"
+            className={errors.companyName ? "border-red-500" : ""}
           />
-
-          {/* Contact Person */}
-          <FormField
-            control={form.control}
+          {errors.companyName && (
+            <p className="text-sm text-red-500">{errors.companyName}</p>
+          )}
+        </div>
+        
+        {/* Contact Person */}
+        <div className="space-y-2">
+          <Label htmlFor="contactPerson">Contact Person *</Label>
+          <Input
+            id="contactPerson"
             name="contactPerson"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Contacted Person *</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter contact person name" {...field} />
-                </FormControl>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            value={formData.contactPerson}
+            onChange={handleChange}
+            placeholder="Enter contact person name"
+            className={errors.contactPerson ? "border-red-500" : ""}
           />
-
-          {/* Mobile Number */}
-          <FormField
-            control={form.control}
+          {errors.contactPerson && (
+            <p className="text-sm text-red-500">{errors.contactPerson}</p>
+          )}
+        </div>
+        
+        {/* Mobile Number */}
+        <div className="space-y-2">
+          <Label htmlFor="mobileNumber">Mobile Number *</Label>
+          <Input
+            id="mobileNumber"
             name="mobileNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Mobile Number *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Enter mobile number" 
-                    {...field}
-                    type="tel"
-                  />
-                </FormControl>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            value={formData.mobileNumber}
+            onChange={handleChange}
+            placeholder="Enter mobile number"
+            className={errors.mobileNumber ? "border-red-500" : ""}
           />
-
-          {/* Email */}
-          <FormField
-            control={form.control}
+          {errors.mobileNumber && (
+            <p className="text-sm text-red-500">{errors.mobileNumber}</p>
+          )}
+        </div>
+        
+        {/* Email */}
+        <div className="space-y-2">
+          <Label htmlFor="email">Email *</Label>
+          <Input
+            id="email"
             name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email ID *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Enter email address" 
-                    {...field}
-                    type="email"
-                  />
-                </FormControl>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            placeholder="Enter email address"
+            className={errors.email ? "border-red-500" : ""}
           />
-
-          {/* Issue Related Section */}
-          <FormField
-            control={form.control}
-            name="issueRelated"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Issue Related To *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select issue type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="data">Data Related</SelectItem>
-                    <SelectItem value="network">Network Related</SelectItem>
-                    <SelectItem value="licence">Licence Related</SelectItem>
-                    <SelectItem value="entry">Entry Related</SelectItem>
-                  </SelectContent>
-                </Select>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Priority */}
-          <FormField
-            control={form.control}
-            name="priority"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Priority *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Assigned Executive */}
-          <FormField
-            control={form.control}
+          {errors.email && (
+            <p className="text-sm text-red-500">{errors.email}</p>
+          )}
+        </div>
+        
+        {/* Issue Related */}
+        <div className="space-y-2">
+          <Label htmlFor="issueRelated">Issue Related To</Label>
+          <Select 
+            value={formData.issueRelated} 
+            onValueChange={(value) => handleSelectChange("issueRelated", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select issue type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="data">Data Related</SelectItem>
+              <SelectItem value="network">Network Related</SelectItem>
+              <SelectItem value="licence">Licence Related</SelectItem>
+              <SelectItem value="entry">Entry Related</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Priority */}
+        <div className="space-y-2">
+          <Label htmlFor="priority">Priority</Label>
+          <Select 
+            value={formData.priority} 
+            onValueChange={(value) => handleSelectChange("priority", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select priority" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="high">High</SelectItem>
+              <SelectItem value="medium">Medium</SelectItem>
+              <SelectItem value="low">Low</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Assigned Executive */}
+        <div className="space-y-2">
+          <Label htmlFor="assignedExecutive">Assigned Office Staff</Label>
+          <Input
+            id="assignedExecutive"
             name="assignedExecutive"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Assigned Office Staff *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                  disabled={loadingExecutives}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select executive" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {executives.map((executive) => (
-                      <SelectItem key={executive.name} value={executive.name}>
-                        {executive.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {loadingExecutives && (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    Loading executives...
-                  </div>
-                )}
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            value={formData.assignedExecutive}
+            onChange={handleChange}
+            placeholder="Enter assigned staff name"
           />
-
-          {/* Status */}
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="on hold">On Hold</SelectItem>
-                  </SelectContent>
-                </Select>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* User Type */}
-          <FormField
-            control={form.control}
-            name="userType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Licence Type *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select licence type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="single user">Single User</SelectItem>
-                    <SelectItem value="multiuser">Multiuser</SelectItem>
-                  </SelectContent>
-                </Select>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Expiry Date */}
-          <FormField
-            control={form.control}
+        </div>
+        
+        {/* Status */}
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select 
+            value={formData.status} 
+            onValueChange={(value) => handleSelectChange("status", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="open">Open</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="on hold">On Hold</SelectItem>
+              <SelectItem value="closed">Closed</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* User Type */}
+        <div className="space-y-2">
+          <Label htmlFor="userType">Licence Type</Label>
+          <Select 
+            value={formData.userType} 
+            onValueChange={(value) => handleSelectChange("userType", value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select licence type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="single user">Single User</SelectItem>
+              <SelectItem value="multiuser">Multiuser</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        
+        {/* Expiry Date */}
+        <div className="space-y-2">
+          <Label htmlFor="expiryDate">Expiry Date</Label>
+          <Input
+            id="expiryDate"
             name="expiryDate"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Expiry Date *</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date()
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                {autoPopulatedFields && (
-                  <FormDescription>
-                    Auto-filled from previous ticket with same serial number
-                  </FormDescription>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
+            type="date"
+            value={formData.expiryDate}
+            onChange={handleChange}
           />
         </div>
-
-        {/* Resolution */}
-        <FormField
-          control={form.control}
-          name="resolution"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Resolution</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter resolution details (if closed)"
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Remarks */}
-        <FormField
-          control={form.control}
+      </div>
+      
+      {/* Remarks */}
+      <div className="space-y-2">
+        <Label htmlFor="remarks">Remarks</Label>
+        <Textarea
+          id="remarks"
           name="remarks"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Remarks</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Enter additional remarks..."
-                  className="resize-none"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          value={formData.remarks}
+          onChange={handleChange}
+          placeholder="Enter any additional remarks"
+          rows={3}
         />
-
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Processing..." : submitButtonText}
-          </Button>
+      </div>
+      
+      {/* Resolution (only show for existing tickets) */}
+      {initialData && (
+        <div className="space-y-2">
+          <Label htmlFor="resolution">Resolution</Label>
+          <Textarea
+            id="resolution"
+            name="resolution"
+            value={formData.resolution}
+            onChange={handleChange}
+            placeholder="Enter resolution details"
+            rows={3}
+          />
         </div>
-      </form>
-    </Form>
+      )}
+      
+      <Button type="submit" disabled={isLoading} className="w-full">
+        {isLoading ? "Saving..." : submitButtonText}
+      </Button>
+    </form>
   );
-}
+};
+
+export default TicketForm;
