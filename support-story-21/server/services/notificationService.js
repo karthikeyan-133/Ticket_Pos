@@ -237,9 +237,9 @@ const generateWhatsAppMessageUrl = (ticket) => {
     
     const message = `Hello ${ticket.contactPerson || 'Customer'}, Your support ticket ${ticket.ticketNumber || 'N/A'} has been resolved. Resolution Details: ${resolutionText} Thank you for your patience! Techzon Support Team`;
     
-    // Try a different encoding approach for better WhatsApp compatibility
-    const encodedMessage = encodeURIComponent(message).replace(/'/g, "%27");
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+    // Try a different approach - use api.whatsapp.com instead of wa.me
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
     
     console.log('Generated WhatsApp URL:', whatsappUrl);
     return { success: true, url: whatsappUrl };

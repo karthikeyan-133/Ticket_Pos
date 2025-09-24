@@ -111,10 +111,10 @@ const EditTicket = () => {
               // Add country code if not present (assuming UAE/India format)
               const whatsappNumber = cleanNumber.length === 10 ? `971${cleanNumber}` : cleanNumber;
               
-              // Properly encode the message for URL
+              // Try a different approach - use api.whatsapp.com instead of wa.me
+              // Also use rawurlencode instead of urlencode for better compatibility
               const encodedMessage = encodeURIComponent(message);
-              // Try a different approach for URL construction
-              const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+              const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
               
               console.log('WhatsApp URL:', whatsappUrl); // For debugging
               // Try opening in the same window first, then fallback to new tab
