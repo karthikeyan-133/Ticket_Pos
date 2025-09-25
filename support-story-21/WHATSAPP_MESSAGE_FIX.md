@@ -21,15 +21,15 @@ After further investigation and testing, the issue was related to:
   - International format numbers: Use as-is after cleaning
 - This ensures the phone number is in the correct E.164 format for WhatsApp
 
-### 2. Changed URL Scheme
-- Switched from `wa.me` to `api.whatsapp.com` which has better compatibility across platforms
-- Used the `phone` parameter instead of embedding the number in the path
-- This approach works better with both WhatsApp Web and the mobile app
+### 2. Multiple URL Schemes for Better Compatibility
+- Generate multiple URL schemes (api.whatsapp.com, wa.me, web.whatsapp.com) for maximum compatibility
+- Try each URL in sequence until one works
+- This approach works better across different platforms and devices
 
 ### 3. Improved URL Opening Method
 - Changed from directly using `window.open()` to a more robust approach with fallback
-- Added a fallback method that redirects in the same window if popup blocking prevents opening in a new tab
-- Added a secondary fallback using the original `wa.me` approach if the primary fails
+- Added a fallback method that tries multiple URL schemes in sequence
+- Added a secondary fallback using manual copy instructions if all URLs fail
 
 ### 4. Enhanced Message Encoding
 - Continued to use proper `encodeURIComponent` for message text
@@ -44,20 +44,20 @@ After further investigation and testing, the issue was related to:
 ### Frontend Changes
 1. In [TicketDetail.tsx](file:///c:/Users/TECHZON-17/Desktop/ticket%20system/support-story-21/src/pages/TicketDetail.tsx):
    - Added proper mobile number formatting for UAE numbers
-   - Changed URL scheme from `wa.me` to `api.whatsapp.com`
+   - Generate multiple URL schemes for better compatibility
    - Modified the WhatsApp URL opening logic with multiple fallbacks
    - Added better error handling
 
 2. In [EditTicket.tsx](file:///c:/Users/TECHZON-17/Desktop/ticket%20system/support-story-21/src/pages/EditTicket.tsx):
    - Added proper mobile number formatting for UAE numbers
-   - Changed URL scheme from `wa.me` to `api.whatsapp.com`
+   - Generate multiple URL schemes for better compatibility
    - Modified the WhatsApp URL opening logic with multiple fallbacks
    - Added better error handling
 
 ### Backend Changes
 1. In [notificationService.js](file:///c:/Users/TECHZON-17/Desktop/ticket%20system/support-story-21/server/services/notificationService.js):
    - Added proper mobile number formatting for UAE numbers
-   - Changed URL scheme from `wa.me` to `api.whatsapp.com`
+   - Generate multiple URL schemes for better compatibility
    - Kept proper message encoding
 
 ## Testing
@@ -71,7 +71,7 @@ Other verifications:
 - URLs are generated correctly with proper encoding
 - Message content appears in WhatsApp input field when the link is opened
 - Fallback mechanisms work when popups are blocked
-- Both `api.whatsapp.com` and `wa.me` approaches are available
+- Multiple URL schemes are available for different platforms
 - Special characters in messages are handled correctly
 
 ## Benefits

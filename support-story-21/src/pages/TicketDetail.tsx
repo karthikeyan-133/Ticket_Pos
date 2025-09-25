@@ -250,54 +250,53 @@ const TicketDetail = () => {
               // Improved WhatsApp redirect approach for better compatibility
               const encodedMessage = encodeURIComponent(message);
               
-              // Detect if user is on mobile or desktop
-              const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+              // Use a more reliable approach that works consistently across devices
+              const openWhatsApp = () => {
+                // Try multiple URL schemes for maximum compatibility
+                const urls = [
+                  `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`,
+                  `https://wa.me/${whatsappNumber}?text=${encodedMessage}`,
+                  `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`
+                ];
+                
+                // Try each URL in sequence until one works
+                let i = 0;
+                const tryNextUrl = () => {
+                  if (i >= urls.length) {
+                    // All URLs failed, show manual instructions
+                    const manualMessage = `Please send this message manually via WhatsApp:\n\n${message}`;
+                    if (confirm(`${manualMessage}\n\nClick OK to copy the message to clipboard.`)) {
+                      navigator.clipboard.writeText(message).then(() => {
+                        toast({
+                          title: "Message Copied",
+                          description: "Message copied to clipboard. You can now paste it in WhatsApp.",
+                        });
+                      }).catch(() => {
+                        alert(manualMessage);
+                      });
+                    }
+                    return;
+                  }
+                  
+                  const newWindow = window.open(urls[i], '_blank');
+                  if (newWindow) {
+                    // Success - WhatsApp opened
+                    toast({
+                      title: "WhatsApp Opened",
+                      description: "WhatsApp should now be open with your message pre-filled.",
+                    });
+                  } else {
+                    // Failed, try next URL
+                    i++;
+                    setTimeout(tryNextUrl, 500); // Small delay before trying next
+                  }
+                };
+                
+                tryNextUrl();
+              };
               
-              if (isMobile) {
-                // For mobile devices, use the standard WhatsApp URL scheme
-                const whatsappUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
-                window.open(whatsappUrl, '_blank');
-              } else {
-                // For desktop, provide options to the user
-                toast({
-                  title: "Send WhatsApp Message",
-                  description: "Click the button below to send the WhatsApp message.",
-                  action: (
-                    <ToastAction 
-                      altText="Send WhatsApp" 
-                      onClick={() => {
-                        // Try multiple approaches for desktop WhatsApp
-                        const webUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
-                        const apiUrl = `https://api.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
-                        
-                        // Try to open WhatsApp Web first
-                        const newWindow = window.open(webUrl, '_blank');
-                        
-                        // If that fails, provide a fallback
-                        if (!newWindow) {
-                          // Show instructions to user
-                          if (confirm("Unable to open WhatsApp automatically. Click OK to open WhatsApp Web manually, or Cancel to copy the message to clipboard.")) {
-                            window.open(apiUrl, '_blank');
-                          } else {
-                            // Copy message to clipboard
-                            navigator.clipboard.writeText(message).then(() => {
-                              toast({
-                                title: "Message Copied",
-                                description: "Message copied to clipboard. You can now paste it in WhatsApp.",
-                              });
-                            }).catch(() => {
-                              // Fallback: show alert with message
-                              alert("Please copy this message and send it via WhatsApp:\n\n" + message);
-                            });
-                          }
-                        }
-                      }}
-                    >
-                      Send WhatsApp
-                    </ToastAction>
-                  ),
-                });
-              }
+              // Call the WhatsApp function
+              openWhatsApp();
 
               // Show success message
               toast({
