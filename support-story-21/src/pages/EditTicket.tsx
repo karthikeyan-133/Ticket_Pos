@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "@/components/ui/use-toast";
 import TicketForm from "@/components/tickets/TicketForm";
 import { Button } from "@/components/ui/button";
+import { ToastAction } from "@/components/ui/toast";
+import { ticketAPI } from "@/services/api";
 
 const EditTicket = () => {
   const { id } = useParams();
@@ -140,7 +142,8 @@ const EditTicket = () => {
                   title: "Send WhatsApp Message",
                   description: "Click the button below to send the WhatsApp message.",
                   action: (
-                    <Button 
+                    <ToastAction 
+                      altText="Send WhatsApp" 
                       onClick={() => {
                         // Try multiple approaches for desktop WhatsApp
                         const webUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
@@ -170,11 +173,11 @@ const EditTicket = () => {
                       }}
                     >
                       Send WhatsApp
-                    </Button>
+                    </ToastAction>
                   ),
                 });
               }
-              
+
               // Show success message
               toast({
                 title: "Ticket Closed",

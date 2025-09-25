@@ -32,6 +32,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { ToastAction } from "@/components/ui/toast";
 import { ticketAPI } from "@/services/api";
 import { toast } from "@/components/ui/use-toast";
 
@@ -262,7 +263,8 @@ const TicketDetail = () => {
                   title: "Send WhatsApp Message",
                   description: "Click the button below to send the WhatsApp message.",
                   action: (
-                    <Button 
+                    <ToastAction 
+                      altText="Send WhatsApp" 
                       onClick={() => {
                         // Try multiple approaches for desktop WhatsApp
                         const webUrl = `https://web.whatsapp.com/send?phone=${whatsappNumber}&text=${encodedMessage}`;
@@ -292,11 +294,11 @@ const TicketDetail = () => {
                       }}
                     >
                       Send WhatsApp
-                    </Button>
+                    </ToastAction>
                   ),
                 });
               }
-              
+
               // Show success message
               toast({
                 title: "Ticket Closed",
