@@ -3,52 +3,97 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// WhatsApp utility functions (simplified for Vercel - no persistent session)
-const sendToNumber = async (number, message) => {
+// Function to format phone numbers for WhatsApp
+const formatWhatsAppNumber = (number) => {
+  // Remove any non-digit characters
+  let cleanNumber = number.replace(/\D/g, '');
+  
+  // Add country code if not present (assuming UAE numbers)
+  if (cleanNumber.startsWith('05') && cleanNumber.length === 10) {
+    // UAE format: 05XXXXXXXX -> 9715XXXXXXXX
+    cleanNumber = `971${cleanNumber.substring(1)}`;
+  } else if (cleanNumber.length === 9 && cleanNumber.startsWith('5')) {
+    // UAE format: 5XXXXXXXX -> 9715XXXXXXXX
+    cleanNumber = `971${cleanNumber}`;
+  } else if (cleanNumber.length === 10) {
+    // Other 10-digit formats: add 971 prefix
+    cleanNumber = `971${cleanNumber}`;
+  }
+  
+  return cleanNumber;
+};
+
+// Function to generate WhatsApp URL for client notifications
+const generateClientWhatsAppUrl = (ticket) => {
   try {
-    // Format the number for WhatsApp (remove any non-digit characters and add country code if needed)
-    let formattedNumber = number.replace(/\D/g, '');
+    const phoneNumber = formatWhatsAppNumber(ticket.mobile_number || ticket.mobileNumber);
+    const contactPerson = ticket.contact_person || ticket.contactPerson || 'Customer';
+    const ticketNumber = ticket.ticket_number || ticket.ticketNumber || 'N/A';
+    const resolution = ticket.resolution || 'No resolution details provided.';
     
-    // Add country code if not present (assuming UAE numbers)
-    if (formattedNumber.startsWith('05') && formattedNumber.length === 10) {
-      formattedNumber = `971${formattedNumber.substring(1)}`;
-    } else if (formattedNumber.length === 9 && formattedNumber.startsWith('5')) {
-      formattedNumber = `971${formattedNumber}`;
-    } else if (formattedNumber.length === 10) {
-      formattedNumber = `971${formattedNumber}`;
-    }
+    // Create thank-you message for client
+    const message = `Hello ${contactPerson}, Your support ticket ${ticketNumber} has been resolved. Resolution Details: ${resolution} Thank you for your patience! Techzon Support Team`;
     
     // Generate WhatsApp URL
     const encodedMessage = encodeURIComponent(message);
-    const url = `https://wa.me/${formattedNumber}?text=${encodedMessage}`;
+    const url = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
     
-    console.log(`Generated WhatsApp URL for ${formattedNumber}: ${url}`);
-    
-    return { 
-      success: true, 
+    return {
+      success: true,
       url: url,
-      message: message
+      message: message,
+      phoneNumber: phoneNumber
     };
   } catch (error) {
-    console.error('Error generating WhatsApp URL:', error);
+    console.error('Error generating client WhatsApp URL:', error);
     return { success: false, error: error.message };
   }
 };
 
-// Function to send message to a group by ID
-const sendToGroup = async (groupIdentifier, message) => {
+// Function to generate group notification message
+const generateGroupNotificationMessage = (ticket) => {
   try {
-    // For Vercel deployment, we can only generate URLs for group messages
+    // Create comprehensive ticket details message for support group
+    const message = `
+*Ticket Resolved Notification*
+============================
+Company name  : ${ticket.company_name || ticket.companyName || 'N/A'}
+Serial No: ${ticket.serial_number || ticket.serialNumber || 'N/A'}
+Version : ${ticket.version || 'N/A'}
+Expiry: ${ticket.expiry_date || ticket.expiryDate ? new Date(ticket.expiry_date || ticket.expiryDate).toLocaleDateString('en-GB') : 'N/A'}
+Contact Person: ${ticket.contact_person || ticket.contactPerson || 'N/A'}
+Contact Number: ${ticket.mobile_number || ticket.mobileNumber || 'N/A'}
+Support: ${ticket.issue_related || ticket.issueRelated || 'N/A'}
+Start: ${ticket.started_at || ticket.startedAt ? new Date(ticket.started_at || ticket.startedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
+Completed: ${ticket.closed_at || ticket.closedAt ? new Date(ticket.closed_at || ticket.closedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
+Resolution: ${ticket.resolution || 'No resolution details provided.'}
+Assigned Executive: ${ticket.assigned_executive || ticket.assignedExecutive || 'N/A'}
+Priority: ${ticket.priority || 'N/A'}
+User Type: ${ticket.user_type || ticket.userType || 'N/A'}
+Ticket Number: ${ticket.ticket_number || ticket.ticketNumber || 'N/A'}
+Email: ${ticket.email || 'N/A'}
+Remarks: ${ticket.remarks || 'N/A'}
+Completed At: ${ticket.closed_at || ticket.closedAt ? new Date(ticket.closed_at || ticket.closedAt).toLocaleString('en-GB') : 'N/A'}
+    `.trim();
+    
+    return message;
+  } catch (error) {
+    console.error('Error generating group notification message:', error);
+    return null;
+  }
+};
+
+// Function to generate group WhatsApp URL
+const generateGroupWhatsAppUrl = (groupIdentifier, message) => {
+  try {
+    // For Vercel deployment, we provide instructions for manual group messaging
     // In a production environment, you would need to use a WhatsApp Business API
     
-    // Generate a message that can be manually sent to the group
-    const groupMessage = `*Ticket Resolved Notification*\n============================\n${message}`;
-    
-    // Return success with message content for manual sending
-    return { 
-      success: true, 
-      message: groupMessage,
-      note: 'For Vercel deployment, please manually send this message to your WhatsApp group'
+    return {
+      success: true,
+      message: message,
+      note: 'For Vercel deployment, please manually send this message to your WhatsApp group',
+      instructions: 'Copy the message above and send it to your WhatsApp group named "' + groupIdentifier + '"'
     };
   } catch (error) {
     console.error('Error preparing group message:', error);
@@ -122,58 +167,37 @@ const whatsappRoutes = async (req, res) => {
           if (ticket.status === 'closed') {
             console.log(`Processing closed ticket: ${ticket.ticket_number || ticket.ticketNumber}`);
             
-            // Handle empty ticket numbers
-            const displayTicketNumber = ticket.ticket_number || ticket.ticketNumber || 'N/A';
-            
-            // Create thank-you message for client
-            const thankYouMessage = `Hello ${ticket.contact_person || ticket.contactPerson}, Your support ticket ${displayTicketNumber} has been resolved. Resolution Details: ${ticket.resolution || 'No resolution details provided.'} Thank you for your patience! Techzon Support Team`;
-            
-            // Create comprehensive ticket details message for support group
-            const ticketDetailsMessage = `
-Company name  : ${ticket.company_name || ticket.companyName || 'N/A'}
-Serial No: ${ticket.serial_number || ticket.serialNumber || 'N/A'}
-Version : ${ticket.version || 'N/A'}
-Expiry: ${ticket.expiry_date || ticket.expiryDate ? new Date(ticket.expiry_date || ticket.expiryDate).toLocaleDateString('en-GB') : 'N/A'}
-Contact Person: ${ticket.contact_person || ticket.contactPerson || 'N/A'}
-Contact Number: ${ticket.mobile_number || ticket.mobileNumber || 'N/A'}
-Support: ${ticket.issue_related || ticket.issueRelated || 'N/A'}
-Start: ${ticket.started_at || ticket.startedAt ? new Date(ticket.started_at || ticket.startedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
-Completed: ${ticket.closed_at || ticket.closedAt ? new Date(ticket.closed_at || ticket.closedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
-Resolution: ${ticket.resolution || 'No resolution details provided.'}
-Assigned Executive: ${ticket.assigned_executive || ticket.assignedExecutive || 'N/A'}
-Priority: ${ticket.priority || 'N/A'}
-User Type: ${ticket.user_type || ticket.userType || 'N/A'}
-Ticket Number: ${displayTicketNumber}
-Email: ${ticket.email || 'N/A'}
-Remarks: ${ticket.remarks || 'N/A'}
-Completed At: ${ticket.closed_at || ticket.closedAt ? new Date(ticket.closed_at || ticket.closedAt).toLocaleString('en-GB') : 'N/A'}
-            `.trim();
-            
-            // Send thank-you message to client
+            // Generate client WhatsApp URL
             let clientResult;
             try {
-              clientResult = await sendToNumber(ticket.mobile_number || ticket.mobileNumber, thankYouMessage);
+              clientResult = generateClientWhatsAppUrl(ticket);
             } catch (error) {
-              console.error('Error sending client message:', error);
+              console.error('Error generating client WhatsApp URL:', error);
               clientResult = { success: false, error: error.message };
             }
             
-            // Send ticket details to support group if groupName is provided
+            // Generate group notification message and URL if groupName is provided
             let groupResult = { success: true, message: 'No group specified' };
             if (ticket.group_name || ticket.groupName || ticket.group_id || ticket.groupId) {
               try {
                 // Use the specific group ID if provided, otherwise use the group name
                 const groupIdentifier = ticket.group_id || ticket.groupId || ticket.group_name || ticket.groupName;
-                groupResult = await sendToGroup(groupIdentifier, ticketDetailsMessage);
+                const groupMessage = generateGroupNotificationMessage(ticket);
+                
+                if (groupMessage) {
+                  groupResult = generateGroupWhatsAppUrl(groupIdentifier, groupMessage);
+                } else {
+                  groupResult = { success: false, error: 'Failed to generate group message' };
+                }
               } catch (error) {
-                console.error('Error sending group message:', error);
+                console.error('Error generating group WhatsApp URL:', error);
                 groupResult = { success: false, error: error.message };
               }
             }
             
             results.push({
               ticketId: ticket.id || ticketItem.id,
-              ticketNumber: displayTicketNumber,
+              ticketNumber: ticket.ticket_number || ticket.ticketNumber || 'N/A',
               clientMessage: clientResult,
               groupMessage: groupResult
             });
@@ -189,7 +213,7 @@ Completed At: ${ticket.closed_at || ticket.closedAt ? new Date(ticket.closed_at 
       
       return res.json({ 
         success: true, 
-        message: 'Notifications processed',
+        message: 'WhatsApp URLs generated successfully',
         results 
       });
     }

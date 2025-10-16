@@ -377,12 +377,92 @@ const sendTicketClosedNotifications = async (ticket) => {
   const emailResult = await sendEmailNotification(ticket);
   console.log('Email result:', emailResult);
   
-  // Send WhatsApp notification
-  const whatsappResult = await sendWhatsAppNotification(ticket);
-  console.log('WhatsApp result:', whatsappResult);
+  // Check if we're running in a Vercel environment
+  const isVercel = !!process.env.VERCEL;
   
-  // Generate WhatsApp message URL (for client-side redirect)
-  const urlResult = generateWhatsAppMessageUrl(ticket);
+  let whatsappResult;
+  let urlResult;
+  
+  if (isVercel) {
+    // For Vercel deployment, generate WhatsApp URLs instead of sending directly
+    console.log('Running in Vercel environment, generating WhatsApp URLs');
+    
+    // Generate client WhatsApp URL
+    try {
+      const whatsAppService = await import('../utils/sendMessage.js');
+      const formatWhatsAppNumber = (number) => {
+        let cleanNumber = number.replace(/\D/g, '');
+        if (cleanNumber.startsWith('05') && cleanNumber.length === 10) {
+          cleanNumber = `971${cleanNumber.substring(1)}`;
+        } else if (cleanNumber.length === 9 && cleanNumber.startsWith('5')) {
+          cleanNumber = `971${cleanNumber}`;
+        } else if (cleanNumber.length === 10) {
+          cleanNumber = `971${cleanNumber}`;
+        }
+        return cleanNumber;
+      };
+      
+      const phoneNumber = formatWhatsAppNumber(ticket.mobile_number || ticket.mobileNumber);
+      const contactPerson = ticket.contact_person || ticket.contactPerson || 'Customer';
+      const ticketNumber = ticket.ticket_number || ticket.ticketNumber || 'N/A';
+      const resolution = ticket.resolution || 'No resolution details provided.';
+      
+      const message = `Hello ${contactPerson}, Your support ticket ${ticketNumber} has been resolved. Resolution Details: ${resolution} Thank you for your patience! Techzon Support Team`;
+      const encodedMessage = encodeURIComponent(message);
+      const clientUrl = `https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodedMessage}`;
+      
+      whatsappResult = { 
+        success: true, 
+        message: 'WhatsApp URL generated for Vercel deployment',
+        url: clientUrl,
+        phoneNumber: phoneNumber
+      };
+      
+      // Generate group notification message
+      const groupMessage = `
+*Ticket Resolved Notification*
+============================
+Company name  : ${ticket.company_name || ticket.companyName || 'N/A'}
+Serial No: ${ticket.serial_number || ticket.serialNumber || 'N/A'}
+Version : ${ticket.version || 'N/A'}
+Expiry: ${ticket.expiry_date || ticket.expiryDate ? new Date(ticket.expiry_date || ticket.expiryDate).toLocaleDateString('en-GB') : 'N/A'}
+Contact Person: ${ticket.contact_person || ticket.contactPerson || 'N/A'}
+Contact Number: ${ticket.mobile_number || ticket.mobileNumber || 'N/A'}
+Support: ${ticket.issue_related || ticket.issueRelated || 'N/A'}
+Start: ${ticket.started_at || ticket.startedAt ? new Date(ticket.started_at || ticket.startedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
+Completed: ${ticket.closed_at || ticket.closedAt ? new Date(ticket.closed_at || ticket.closedAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}
+Resolution: ${ticket.resolution || 'No resolution details provided.'}
+Assigned Executive: ${ticket.assigned_executive || ticket.assignedExecutive || 'N/A'}
+Priority: ${ticket.priority || 'N/A'}
+User Type: ${ticket.user_type || ticket.userType || 'N/A'}
+Ticket Number: ${ticket.ticket_number || ticket.ticketNumber || 'N/A'}
+Email: ${ticket.email || 'N/A'}
+Remarks: ${ticket.remarks || 'N/A'}
+Completed At: ${ticket.closed_at || ticket.closedAt ? new Date(ticket.closed_at || ticket.closedAt).toLocaleString('en-GB') : 'N/A'}
+      `.trim();
+      
+      urlResult = {
+        success: true,
+        urls: {
+          client: clientUrl,
+          group: 'For group messaging, copy the message above and send it manually to your WhatsApp group'
+        },
+        message: message,
+        groupMessage: groupMessage
+      };
+    } catch (error) {
+      console.error('Error generating WhatsApp URLs for Vercel:', error);
+      whatsappResult = { success: false, error: error.message };
+      urlResult = { success: false, error: error.message };
+    }
+  } else {
+    // For local development, use the existing WhatsApp Web implementation
+    console.log('Running in local environment, using WhatsApp Web');
+    whatsappResult = await sendWhatsAppNotification(ticket);
+    urlResult = generateWhatsAppMessageUrl(ticket);
+  }
+  
+  console.log('WhatsApp result:', whatsappResult);
   console.log('WhatsApp URL result:', urlResult);
   
   return {
