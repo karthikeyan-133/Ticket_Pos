@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { sendToNumber, isClientReady } from '../utils/sendMessage.js';
 
 // Load environment variables with error handling
 try {
@@ -45,7 +46,13 @@ const createEmailTransporter = () => {
       // Add additional configuration for Rediff Business
       if (process.env.VERCEL_SMTP_HOST.includes('rediff')) {
         config.tls = {
-          rejectUnauthorized: false
+          rejectUnauthorized: false,
+          // Allow weaker DH key sizes for compatibility
+          minDHSize: 1024
+        };
+        // Add ciphers that support weaker encryption for older servers
+        config.secureOptions = {
+          ciphers: 'DEFAULT@SECLEVEL=1'
         };
       }
       
@@ -74,7 +81,13 @@ const createEmailTransporter = () => {
     // Add additional configuration for Rediff Business
     if (process.env.SMTP_HOST.includes('rediff')) {
       config.tls = {
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        // Allow weaker DH key sizes for compatibility
+        minDHSize: 1024
+      };
+      // Add ciphers that support weaker encryption for older servers
+      config.secureOptions = {
+        ciphers: 'DEFAULT@SECLEVEL=1'
       };
     }
     
@@ -128,7 +141,8 @@ const sendEmailNotification = async (ticket) => {
       console.log('SMTP transporter verified successfully');
     } catch (verifyError) {
       console.error('SMTP transporter verification failed:', verifyError);
-      return { success: false, error: `SMTP verification failed: ${verifyError.message}` };
+      // Try to send email anyway if verification fails (sometimes verification fails but sending works)
+      console.log('Continuing with email send despite verification failure...');
     }
     
     // Validate required fields
@@ -153,7 +167,7 @@ const sendEmailNotification = async (ticket) => {
     const mailOptions = {
       from: process.env.FROM_EMAIL || process.env.EMAIL_USER || process.env.VERCEL_SMTP_USER || 'support@techzontech.com',
       to: normalizedTicket.email,
-      subject: `Your Support Ticket ${normalizedTicket.ticketNumber} Has Been Resolved`,
+      subject: `Your Support Ticket ${normalizedTicket.ticketNumber || 'N/A'} Has Been Resolved`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Ticket Resolved</h2>
@@ -291,7 +305,61 @@ const generateWhatsAppMessageUrl = (ticket) => {
   }
 };
 
-// Send ticket closed notifications (email and WhatsApp URL generation)
+// Send WhatsApp notification using whatsapp-web.js with session checking
+const sendWhatsAppNotification = async (ticket) => {
+  try {
+    console.log('Attempting to send WhatsApp notification for ticket:', ticket.ticketNumber);
+    
+    // Validate required fields
+    if (!ticket.mobileNumber) {
+      console.error('No mobile number provided for ticket:', ticket.ticketNumber);
+      return { success: false, error: 'No mobile number provided for the ticket' };
+    }
+    
+    // Normalize ticket data
+    const normalizedTicket = {
+      ticketNumber: ticket.ticket_number || ticket.ticketNumber,
+      contactPerson: ticket.contact_person || ticket.contactPerson,
+      mobileNumber: ticket.mobile_number || ticket.mobileNumber,
+      resolution: ticket.resolution
+    };
+    
+    // Create thank-you message
+    const message = `Hello ${normalizedTicket.contactPerson || 'Customer'}, Your support ticket ${normalizedTicket.ticketNumber || 'N/A'} has been resolved. Resolution Details: ${normalizedTicket.resolution || 'No resolution details provided.'} Thank you for your patience! Techzon Support Team`;
+    
+    // Check if WhatsApp client is ready, if not, try to reinitialize
+    if (!isClientReady) {
+      console.log('WhatsApp client is not ready. Attempting to send via URL instead.');
+      // Return success with URL generation as fallback
+      return { 
+        success: true, 
+        message: 'WhatsApp client not ready, using URL generation as fallback',
+        fallbackUrls: generateWhatsAppMessageUrl(ticket)
+      };
+    }
+    
+    // Send the message
+    const result = await sendToNumber(normalizedTicket.mobileNumber, message);
+    
+    console.log('WhatsApp notification result:', result);
+    return result;
+  } catch (error) {
+    console.error('Error sending WhatsApp notification:', error);
+    // Try URL generation as fallback
+    try {
+      const urlResult = generateWhatsAppMessageUrl(ticket);
+      return { 
+        success: true, 
+        message: 'Direct WhatsApp send failed, using URL generation as fallback',
+        fallbackUrls: urlResult
+      };
+    } catch (urlError) {
+      return { success: false, error: error.message };
+    }
+  }
+};
+
+// Send ticket closed notifications (email and WhatsApp)
 const sendTicketClosedNotifications = async (ticket) => {
   console.log(`Sending notifications for closed ticket ${ticket.ticket_number || ticket.ticketNumber}`);
   console.log('Full ticket data:', JSON.stringify(ticket, null, 2));
@@ -309,24 +377,31 @@ const sendTicketClosedNotifications = async (ticket) => {
   const emailResult = await sendEmailNotification(ticket);
   console.log('Email result:', emailResult);
   
-  // Generate WhatsApp message URL (for client-side redirect)
-  const whatsappResult = generateWhatsAppMessageUrl(ticket);
+  // Send WhatsApp notification
+  const whatsappResult = await sendWhatsAppNotification(ticket);
   console.log('WhatsApp result:', whatsappResult);
+  
+  // Generate WhatsApp message URL (for client-side redirect)
+  const urlResult = generateWhatsAppMessageUrl(ticket);
+  console.log('WhatsApp URL result:', urlResult);
   
   return {
     email: emailResult,
-    whatsapp: whatsappResult
+    whatsapp: whatsappResult,
+    whatsappUrl: urlResult
   };
 };
 
 export {
   sendTicketClosedNotifications,
   sendEmailNotification,
+  sendWhatsAppNotification,
   generateWhatsAppMessageUrl
 };
 
 export default {
   sendTicketClosedNotifications,
   sendEmailNotification,
+  sendWhatsAppNotification,
   generateWhatsAppMessageUrl
 };

@@ -1,163 +1,130 @@
-# Welcome to your Lovable project
+# Tally Support Ticket System
 
-## Project info
-
-**URL**: https://lovable.dev/projects/3aa8a1a8-00d7-45e5-b495-bd2e4cb882a1
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/3aa8a1a8-00d7-45e5-b495-bd2e4cb882a1) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+A comprehensive ticket management system for Tally support with WhatsApp and email notifications.
 
 ## Features
 
-- Ticket Management System
-- Executive Management
-- Sales Enquiry Tracking
-- Dashboard Analytics
-- API Integration
+- 🎫 Ticket creation and management
+- 📧 Email notifications for closed tickets
+- 💬 WhatsApp notifications for clients and support teams
+- 📊 Dashboard with ticket analytics
+- 📱 Responsive design for all devices
+- ☁️ Supabase database integration
+- 🚀 Vercel deployment ready
 
-## How can I deploy this project?
+## Tech Stack
 
-Simply open [Lovable](https://lovable.dev/projects/3aa8a1a8-00d7-45e5-b495-bd2e4cb882a1) and click on Share -> Publish.
+- **Frontend**: React, Vite, Tailwind CSS, Shadcn UI
+- **Backend**: Node.js, Express.js
+- **Database**: Supabase (PostgreSQL)
+- **Notifications**: WhatsApp Web API, Nodemailer
+- **Deployment**: Vercel
 
-## Vercel Deployment Instructions
+## Prerequisites
 
-### Environment Variables Setup
+- Node.js 16+
+- npm or yarn
+- Supabase account
+- WhatsApp Business API (for production) or WhatsApp Web (for development)
 
-To properly deploy this application to Vercel, you need to set up the following environment variables in your Vercel project settings:
+## Installation
 
-#### Backend Environment Variables
-
-1. Go to your Vercel project dashboard
-2. Navigate to Settings > Environment Variables
-3. Add the following variables:
-
-```
-SUPABASE_URL=https://bnrnuddotoemwsgvlgbj.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJucm51ZGRvdG9lbXdzZ3ZsZ2JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1MjU0MDYsImV4cCI6MjA3MzEwMTQwNn0.bSqfeOf8LkV-4EfJxHjPiScvHy_pMpqmVAQ8vT4UuIQ
-FRONTEND_URL=https://ticket-pos.vercel.app
-
-# Email Configuration (Rediff Business SMTP)
-SMTP_HOST=smtp.rediffmailpro.com
-SMTP_PORT=587
-SMTP_USER=your-email@rediffmailpro.com
-SMTP_PASS=your-password
-FROM_EMAIL=your-email@rediffmailpro.com
-SMTP_SECURE=false
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd ticket-system
 ```
 
-#### Frontend Environment Variables
-
-For the frontend, make sure you have the following in your `.env` file:
-
+2. Install dependencies:
+```bash
+npm install
+cd server
+npm install
 ```
-VITE_API_BASE_URL=
+
+3. Create a `.env` file based on `.env.example`:
+```bash
+cp .env.example .env
 ```
 
-Note: For Vercel deployments, `VITE_API_BASE_URL` should be empty so that the frontend makes requests to the same domain.
+4. Configure your environment variables:
+- Supabase credentials
+- Email SMTP settings
+- WhatsApp configuration
 
-### Email Configuration
+## Development
 
-The ticket system supports email notifications when tickets are closed. To enable this feature:
+1. Start the development server:
+```bash
+npm run dev
+```
 
-1. Configure the SMTP settings in your environment variables as shown above
-2. The system supports both Rediff Business SMTP and Gmail SMTP
-3. For Gmail, you can alternatively use:
-   ```
-   EMAIL_SERVICE=gmail
-   EMAIL_USER=your-gmail-address@gmail.com
-   EMAIL_PASS=your-gmail-app-password
-   FROM_EMAIL=your-gmail-address@gmail.com
-   ```
+2. Start the backend server:
+```bash
+cd server
+npm run dev
+```
 
-### Deployment Steps
+## Deployment
 
-1. After setting up the environment variables, redeploy your application
-2. Vercel will automatically pick up the environment variables during the build process
-3. The application should now be able to connect to the Supabase database and send email notifications
+### Vercel Deployment
 
-### Testing Email Functionality
+1. Push to GitHub
+2. Connect repository to Vercel
+3. Set environment variables in Vercel project settings
+4. Deploy
 
-You can test the email configuration by:
+For detailed Vercel deployment instructions, see [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md).
 
-1. Visiting the email config test endpoint: `/api/test-email-config`
-2. Using the email send test endpoint: `/api/test-email-send` (POST request with JSON body containing `toEmail`, `subject`, and `message`)
+## WhatsApp Integration
 
-### Troubleshooting
+The system includes WhatsApp notifications for:
+- Client thank-you messages when tickets are closed
+- Support team notifications with ticket details
 
-If you still encounter issues:
+For setup instructions, see [WHATSAPP_INTEGRATION.md](WHATSAPP_INTEGRATION.md).
 
-1. Check that all environment variables are correctly set in Vercel
-2. Verify that the Supabase credentials are correct
-3. Check the deployment logs for any error messages
-4. Make sure there are no typos in the environment variable names
-5. Test the API endpoints directly using the diagnostic tool at `/api-diagnostic.html`
+## API Endpoints
 
-### Testing API Endpoints
+- `GET /api/tickets` - Get all tickets
+- `POST /api/tickets` - Create a new ticket
+- `GET /api/tickets/:id` - Get ticket by ID
+- `PUT /api/tickets/:id` - Update ticket
+- `DELETE /api/tickets/:id` - Delete ticket
+- `POST /api/notify-ticket` - Send WhatsApp notifications
 
-You can test the API endpoints directly by visiting:
-- `https://ticket-pos.vercel.app/api/health` - General API health check
-- `https://ticket-pos.vercel.app/api/sales/health` - Sales API health check
-- `https://ticket-pos.vercel.app/api/test` - Basic connectivity test
-- `https://ticket-pos.vercel.app/api/test-email-config` - Email configuration test
-- `https://ticket-pos.vercel.app/api/test-email-send` - Email sending test (POST request)
+## Testing
 
-## Can I connect a custom domain to my Lovable project?
+Run the test scripts to verify functionality:
+- `node test-comprehensive.js` - Test WhatsApp notifications
+- `node test-email.js` - Test email configuration
+- `node test-vercel-deployment.js` - Test Vercel deployment configuration
 
-Yes, you can!
+## Documentation
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- [WHATSAPP_INTEGRATION.md](WHATSAPP_INTEGRATION.md) - WhatsApp setup and usage
+- [WHATSAPP_GROUP_SETUP.md](WHATSAPP_GROUP_SETUP.md) - WhatsApp group configuration
+- [VERCEL_DEPLOYMENT.md](VERCEL_DEPLOYMENT.md) - Vercel deployment guide
+- [SYSTEM_STATUS.md](SYSTEM_STATUS.md) - Current system status
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Scripts
+
+- `node list-whatsapp-groups.js` - List available WhatsApp groups
+- `node clear-whatsapp-data.js` - Clear WhatsApp session data
+- `node monitor-whatsapp.js` - Monitor WhatsApp client status
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For support, please open an issue on GitHub or contact the development team.

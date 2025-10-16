@@ -1,0 +1,15 @@
+# WhatsApp Client Message Example
+
+When a ticket is closed, the client will receive a message in the following format:
+
+## Message Format
+```
+Hello [Contact Person], Your support ticket [Ticket Number] has been resolved. Resolution Details: [Resolution Details] Thank you for your patience! Techzon Support Team
+```
+
+## Example Message
+```
+Hello John Doe, Your support ticket TICKET/2025/1001 has been resolved. Resolution Details: vhtjtt Thank you for your patience! Techzon Support Team
+```
+
+This message will appear in the client's WhatsApp chat with the system. The client will see this message as if it was sent by the support team's WhatsApp number that was used to set up the integration.

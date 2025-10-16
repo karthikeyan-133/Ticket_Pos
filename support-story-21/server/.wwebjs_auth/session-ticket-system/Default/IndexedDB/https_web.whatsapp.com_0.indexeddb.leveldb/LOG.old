@@ -1,0 +1,27 @@
+2025/10/16-11:46:10.999 19c0 Reusing MANIFEST C:\Users\TECHZON-17\Desktop\ticket system\support-story-21\server\.wwebjs_auth\session-ticket-system\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2025/10/16-11:46:10.999 19c0 Recovering log #200
+2025/10/16-11:46:11.184 19c0 Reusing old log C:\Users\TECHZON-17\Desktop\ticket system\support-story-21\server\.wwebjs_auth\session-ticket-system\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000200.log 
+2025/10/16-11:46:11.852 3e0c Level-0 table #212: started
+2025/10/16-11:46:11.886 3e0c Level-0 table #212: 851289 bytes OK
+2025/10/16-11:46:11.888 3e0c Delete type=0 #200
+2025/10/16-11:46:11.889 3e0c Manual compaction at level-0 from '\x00\x1c\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x1d\x00\x00\x00' @ 0 : 0; will stop at (end)
+2025/10/16-11:46:14.655 19c0 Compacting 1@1 + 8@2 files
+2025/10/16-11:46:14.742 19c0 Generated table #213@1: 34101 keys, 2189251 bytes
+2025/10/16-11:46:14.803 19c0 Generated table #214@1: 2949 keys, 2151581 bytes
+2025/10/16-11:46:14.845 19c0 Generated table #215@1: 2651 keys, 2147451 bytes
+2025/10/16-11:46:14.950 19c0 Generated table #216@1: 24197 keys, 2220567 bytes
+2025/10/16-11:46:15.035 19c0 Generated table #217@1: 19733 keys, 2174531 bytes
+2025/10/16-11:46:15.157 19c0 Generated table #218@1: 73102 keys, 2216003 bytes
+2025/10/16-11:46:15.339 19c0 Generated table #219@1: 101853 keys, 2252308 bytes
+2025/10/16-11:46:15.441 19c0 Generated table #220@1: 75348 keys, 1675624 bytes
+2025/10/16-11:46:15.441 19c0 Compacted 1@1 + 8@2 files => 17027316 bytes
+2025/10/16-11:46:15.442 19c0 compacted to: files[ 0 0 8 0 0 0 0 ]
+2025/10/16-11:46:15.442 19c0 Delete type=2 #202
+2025/10/16-11:46:15.442 19c0 Delete type=2 #203
+2025/10/16-11:46:15.442 19c0 Delete type=2 #204
+2025/10/16-11:46:15.442 19c0 Delete type=2 #205
+2025/10/16-11:46:15.442 19c0 Delete type=2 #206
+2025/10/16-11:46:15.442 19c0 Delete type=2 #207
+2025/10/16-11:46:15.442 19c0 Delete type=2 #208
+2025/10/16-11:46:15.442 19c0 Delete type=2 #209
+2025/10/16-11:46:15.442 19c0 Delete type=2 #212

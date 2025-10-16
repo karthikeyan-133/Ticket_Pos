@@ -11,6 +11,7 @@ const __dirname = dirname(__filename);
 import ticketRoutes from './tickets.js';
 import executiveRoutes from './executives.js';
 import salesRoutes from './sales.js';
+import whatsappRoutes from './whatsapp.js';
 
 // Initialize Supabase client for Vercel environment
 let supabase = null;
@@ -432,6 +433,45 @@ const handler = async (req, res) => {
       };
       
       await salesRoutes(salesReq, salesRes);
+      return;
+    }
+    
+    // WhatsApp routes
+    if (path.startsWith('/api/notify-ticket')) {
+      const whatsappPath = path.substring('/api/notify-ticket'.length) || '/';
+      const whatsappReq = {
+        ...req,
+        url: whatsappPath,
+        path: whatsappPath,
+        params: {},
+        query: Object.fromEntries(url.searchParams)
+      };
+      
+      // Extract ID from path if present
+      const pathParts = whatsappPath.split('/').filter(Boolean);
+      if (pathParts.length > 0 && pathParts[0]) {
+        whatsappReq.params.id = pathParts[0];
+      }
+      
+      const whatsappRes = {
+        status: (code) => {
+          res.statusCode = code;
+          return whatsappRes;
+        },
+        json: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(data));
+        },
+        send: (data) => {
+          // Add CORS headers to all responses
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.end(data);
+        }
+      };
+      
+      await whatsappRoutes(whatsappReq, whatsappRes);
       return;
     }
     

@@ -62,3 +62,23 @@ testTickets.forEach((ticket, index) => {
   
   console.log(""); // Empty line for readability
 });
+
+// Test script for WhatsApp service
+// Run this script to test the WhatsApp functionality
+
+import { sendToNumber, sendToGroupByName } from './server/utils/sendMessage.js';
+
+// Wait for the client to be ready
+setTimeout(async () => {
+  console.log('Testing WhatsApp service...');
+  
+  // Test sending a message to a number (replace with a valid number)
+  const numberResult = await sendToNumber('+971501234567', 'Hello! This is a test message from the ticket system.');
+  console.log('Number message result:', numberResult);
+  
+  // Test sending a message to a group (replace with a valid group name)
+  const groupResult = await sendToGroupByName('Support Team UAE', 'Test notification: A ticket has been closed.');
+  console.log('Group message result:', groupResult);
+  
+  console.log('Test completed. Check your WhatsApp!');
+}, 5000); // Wait 5 seconds for client to initialize
